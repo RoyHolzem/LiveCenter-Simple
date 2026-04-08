@@ -25,75 +25,32 @@ export async function POST(request: NextRequest) {
     },
     body: JSON.stringify({
       model: 'openclaw',
-      stream: true,
+      stream: false,
       messages: upstreamMessages
     }),
     cache: 'no-store'
   });
 
-  if (!upstream.ok || !upstream.body) {
-    const text = await upstream.text();
+  const text = await upstream.text();
+  if (!upstream.ok) {
     return new Response(text || 'Gateway request failed', {
       status: upstream.status || 500,
       headers: { 'Content-Type': 'text/plain; charset=utf-8' }
     });
   }
 
-  const encoder = new TextEncoder();
-  const decoder = new TextDecoder();
+  let content = '';
+  try {
+    const json = JSON.parse(text) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+    content = json.choices?.[0]?.message?.content || '';
+  } catch {
+    content = text;
+  }
 
-  const stream = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      const send = (payload: unknown) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
-      send({ type: 'status', status: 'processing', label: 'Xena is processing' });
-
-      const reader = upstream.body!.getReader();
-      let buffer = '';
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const chunks = buffer.split('\n\n');
-          buffer = chunks.pop() || '';
-
-          for (const chunk of chunks) {
-            const line = chunk.split('\n').find((entry) => entry.startsWith('data:'));
-            if (!line) continue;
-            const data = line.slice(5).trim();
-            if (!data) continue;
-            if (data === '[DONE]') {
-              send({ type: 'done' });
-              continue;
-            }
-
-            const json = JSON.parse(data) as {
-              choices?: Array<{ delta?: { content?: string }; message?: { content?: string } }>;
-            };
-
-            const delta = json.choices?.[0]?.delta?.content ?? json.choices?.[0]?.message?.content;
-            if (delta) {
-              send({ type: 'status', status: 'typing', label: 'Xena is typing' });
-              send({ type: 'delta', content: delta });
-            }
-          }
-        }
-
-        send({ type: 'done' });
-        controller.close();
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown upstream error';
-        send({ type: 'error', error: message });
-        controller.close();
-      }
-    }
-  });
-
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream; charset=utf-8',
-      'Cache-Control': 'no-cache, no-transform'
-    }
+  return Response.json({
+    ok: true,
+    content
   });
 }
