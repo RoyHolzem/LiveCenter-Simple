@@ -3,37 +3,37 @@
   min-height: 100vh;
   overflow: hidden;
   background:
-    radial-gradient(circle at 20% 20%, rgba(90, 190, 255, 0.18), transparent 30%),
-    radial-gradient(circle at 80% 18%, rgba(0, 162, 255, 0.12), transparent 24%),
-    radial-gradient(circle at 50% 80%, rgba(69, 130, 255, 0.14), transparent 28%),
-    linear-gradient(180deg, #02060d 0%, #040913 30%, #030913 100%);
+    radial-gradient(circle at 20% 18%, rgba(92, 182, 255, 0.18), transparent 28%),
+    radial-gradient(circle at 84% 14%, rgba(76, 210, 255, 0.14), transparent 22%),
+    radial-gradient(circle at 50% 75%, rgba(42, 104, 255, 0.18), transparent 32%),
+    linear-gradient(180deg, #02050b 0%, #040913 38%, #030812 100%);
 }
 
 .noise,
 .grid,
-.particles {
+.particles,
+.codeRain {
   position: absolute;
   inset: 0;
   pointer-events: none;
 }
 
 .noise {
-  opacity: 0.08;
-  mix-blend-mode: screen;
-  background-image:
-    radial-gradient(rgba(255,255,255,0.12) 0.8px, transparent 0.8px);
+  opacity: 0.07;
+  background-image: radial-gradient(rgba(255,255,255,0.12) 0.8px, transparent 0.8px);
   background-size: 8px 8px;
+  mix-blend-mode: screen;
 }
 
 .grid {
   background-image:
-    linear-gradient(rgba(88, 212, 255, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(88, 212, 255, 0.06) 1px, transparent 1px);
-  background-size: 100% 42px, 42px 100%;
-  mask-image: linear-gradient(to bottom, rgba(0,0,0,0.2), black 30%, rgba(0,0,0,0.5));
-  transform: perspective(1200px) rotateX(74deg) translateY(34%);
-  transform-origin: center center;
-  opacity: 0.55;
+    linear-gradient(rgba(91, 207, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(91, 207, 255, 0.06) 1px, transparent 1px);
+  background-size: 100% 44px, 44px 100%;
+  transform: perspective(1200px) rotateX(76deg) translateY(34%);
+  transform-origin: center;
+  opacity: 0.52;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,0.08), black 34%, rgba(0,0,0,0.5));
 }
 
 .particles::before,
@@ -41,150 +41,231 @@
   content: '';
   position: absolute;
   inset: 0;
-  background-image:
-    radial-gradient(circle, rgba(114, 232, 255, 0.7) 0 1px, transparent 1.4px);
+  background-image: radial-gradient(circle, rgba(124, 236, 255, 0.7) 0 1px, transparent 1.4px);
   background-size: 180px 180px;
-  animation: drift 18s linear infinite;
-  opacity: 0.24;
+  opacity: 0.22;
+  animation: drift 20s linear infinite;
 }
 
 .particles::after {
-  background-size: 240px 240px;
-  animation-duration: 26s;
+  background-size: 260px 260px;
+  opacity: 0.12;
+  animation-duration: 28s;
   animation-direction: reverse;
-  opacity: 0.14;
+}
+
+.codeRain {
+  opacity: 0.16;
+  background-image:
+    linear-gradient(180deg, transparent 0%, rgba(91, 220, 255, 0.12) 48%, transparent 100%),
+    repeating-linear-gradient(90deg, transparent 0 90px, rgba(96, 228, 255, 0.06) 90px 91px);
+  background-size: 100% 180px, 100% 100%;
+  animation: rain 10s linear infinite;
 }
 
 .frame {
   position: relative;
   z-index: 1;
-  width: min(1480px, 100%);
+  width: min(1540px, 100%);
   margin: 0 auto;
-  padding: 42px 28px 32px;
+  padding: 30px 22px 22px;
   display: grid;
-  gap: 30px;
+  gap: 24px;
 }
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(360px, 520px) 1fr;
-  gap: 22px;
-  align-items: center;
+  grid-template-columns: minmax(320px, 430px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: stretch;
 }
 
-.heroCopy {
-  padding: 20px 0;
+.leftPane,
+.commandDeck,
+.sidePanel,
+.statPanel,
+.hudPanelTop,
+.hudPanelBottom {
+  border: 1px solid rgba(111, 221, 255, 0.14);
+  background: linear-gradient(180deg, rgba(8, 19, 30, 0.76), rgba(5, 13, 22, 0.62));
+  box-shadow:
+    0 18px 60px rgba(3, 9, 17, 0.44),
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    0 0 24px rgba(53, 161, 255, 0.08);
+  backdrop-filter: blur(22px);
 }
 
-.eyebrow {
-  font-size: 12px;
-  letter-spacing: 0.34em;
+.leftPane {
+  border-radius: 30px;
+  padding: 28px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 720px;
+}
+
+.signalBar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 26px;
+}
+
+.signalBar span {
+  width: 44px;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(72, 150, 255, 0.22), rgba(121, 240, 255, 1));
+  box-shadow: 0 0 16px rgba(104, 229, 255, 0.28);
+}
+
+.eyebrow,
+.statLabel,
+.sidePanelLabel,
+.hudLabel,
+.messageMeta {
+  letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: rgba(108, 227, 255, 0.84);
-  margin-bottom: 18px;
+  font-size: 11px;
+  color: rgba(133, 209, 235, 0.66);
 }
 
 .heroTitle {
   margin: 0;
-  font-size: clamp(54px, 8vw, 104px);
-  line-height: 0.92;
-  letter-spacing: -0.04em;
+  font-size: clamp(60px, 8vw, 110px);
+  line-height: 0.88;
+  letter-spacing: -0.05em;
   color: #f4fbff;
-  text-shadow: 0 0 28px rgba(100, 213, 255, 0.18);
+  text-shadow: 0 0 30px rgba(98, 224, 255, 0.16);
 }
 
 .heroText {
-  max-width: 42ch;
-  margin: 20px 0 0;
-  font-size: 16px;
-  line-height: 1.72;
-  color: rgba(205, 228, 241, 0.78);
+  margin: 18px 0 0;
+  max-width: 34ch;
+  font-size: 15px;
+  line-height: 1.78;
+  color: rgba(205, 227, 238, 0.72);
 }
 
-.heroPanels {
+.heroStats {
   margin-top: 28px;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
 }
 
-.infoCard,
-.card,
-.consoleShell {
-  border: 1px solid rgba(98, 220, 255, 0.16);
-  background: linear-gradient(180deg, rgba(8, 18, 29, 0.76), rgba(6, 14, 25, 0.58));
-  box-shadow:
-    0 18px 60px rgba(3, 10, 18, 0.46),
-    inset 0 1px 0 rgba(148, 227, 255, 0.1),
-    0 0 28px rgba(0, 162, 255, 0.08);
-  backdrop-filter: blur(22px);
-}
-
-.infoCard {
-  border-radius: 18px;
+.statPanel {
+  border-radius: 20px;
   padding: 16px;
 }
 
-.infoLabel,
-.cardTitle {
-  display: block;
-  font-size: 11px;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: rgba(126, 199, 225, 0.62);
+.statValue,
+.sidePanelValue {
+  margin-top: 10px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #eefaff;
 }
 
-.infoValue,
-.metric {
+.centerStage {
+  position: relative;
+  min-height: 720px;
+  border-radius: 34px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 32%, rgba(89, 191, 255, 0.14), transparent 26%),
+    radial-gradient(circle at 50% 80%, rgba(35, 92, 255, 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(3, 10, 16, 0.5), rgba(3, 8, 14, 0.82));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+.orbitOne,
+.orbitTwo {
+  position: absolute;
+  border: 1px solid rgba(112, 230, 255, 0.1);
+  border-radius: 50%;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.orbitOne {
+  width: 68%;
+  height: 68%;
+  animation: spin 24s linear infinite;
+}
+
+.orbitTwo {
+  width: 84%;
+  height: 84%;
+  animation: spinReverse 34s linear infinite;
+}
+
+.hudPanelTop,
+.hudPanelBottom {
+  position: absolute;
+  width: 240px;
+  border-radius: 18px;
+  padding: 14px 16px;
+  z-index: 2;
+}
+
+.hudPanelTop {
+  right: 34px;
+  top: 34px;
+}
+
+.hudPanelBottom {
+  left: 34px;
+  bottom: 34px;
+}
+
+.hudPanelTop strong,
+.hudPanelBottom strong {
   display: block;
   margin-top: 10px;
-  font-size: 18px;
-  font-weight: 600;
-  color: #eef9ff;
+  color: #eefaff;
+  font-size: 16px;
 }
 
 .robotStage {
-  position: relative;
-  min-height: 640px;
+  position: absolute;
+  inset: 0;
   display: grid;
   place-items: center;
 }
 
 .halo {
   position: absolute;
-  width: min(720px, 92%);
+  width: min(760px, 90%);
   aspect-ratio: 1;
   border-radius: 50%;
-  background:
-    radial-gradient(circle, rgba(91, 208, 255, 0.24), rgba(36, 84, 160, 0.06) 45%, transparent 70%);
-  filter: blur(10px);
+  background: radial-gradient(circle, rgba(91, 214, 255, 0.22), rgba(33, 82, 171, 0.06) 44%, transparent 70%);
+  filter: blur(12px);
 }
 
 .robot {
-  --core-glow: rgba(91, 214, 255, 0.95);
   position: relative;
-  width: min(620px, 92%);
-  aspect-ratio: 0.9;
+  width: min(760px, 88%);
+  aspect-ratio: 0.86;
   transform-style: preserve-3d;
-  transform: perspective(1600px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
-  transition: transform 220ms ease-out, filter 320ms ease;
-  animation: robotFloat 7s ease-in-out infinite;
+  transform: perspective(1800px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+  transition: transform 220ms ease-out, filter 260ms ease;
+  animation: robotFloat 8s ease-in-out infinite;
 }
 
 .robotAura {
   position: absolute;
-  inset: 14% 18%;
+  inset: 12% 16%;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(79, 208, 255, 0.2), transparent 68%);
-  filter: blur(22px);
+  background: radial-gradient(circle, rgba(93, 225, 255, 0.2), transparent 68%);
+  filter: blur(28px);
 }
 
 .robotHead {
   position: absolute;
   left: 50%;
-  top: 10%;
-  width: 46%;
-  height: 36%;
+  top: 6%;
+  width: 42%;
+  height: 38%;
   transform: translateX(-50%) translate3d(var(--look-x), var(--look-y), 0);
 }
 
@@ -198,48 +279,60 @@
 .shoulderRight,
 .neck span {
   position: absolute;
-  background: linear-gradient(180deg, rgba(164, 205, 232, 0.14), rgba(22, 51, 78, 0.95));
-  border: 1px solid rgba(121, 214, 255, 0.18);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 0 20px rgba(41, 148, 255, 0.12);
+  border: 1px solid rgba(110, 222, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 0 24px rgba(51, 166, 255, 0.1);
 }
 
 .cranium {
-  inset: 0 16% 18% 16%;
-  border-radius: 42% 42% 34% 34% / 28% 28% 40% 40%;
+  inset: 0 15% 18% 15%;
+  border-radius: 44% 44% 30% 30% / 28% 28% 40% 40%;
+  background: linear-gradient(180deg, rgba(176, 208, 228, 0.18), rgba(19, 44, 66, 0.92));
 }
 
 .facePlate {
-  inset: 18% 24% 6% 24%;
-  border-radius: 28px 28px 36px 36px;
-  background: linear-gradient(180deg, rgba(12, 26, 43, 0.94), rgba(5, 13, 23, 0.96));
+  inset: 18% 23% 7% 23%;
+  border-radius: 28px 28px 40px 40px;
+  background: linear-gradient(180deg, rgba(10, 24, 40, 0.96), rgba(4, 10, 19, 0.98));
 }
 
-.brow {
+.faceSeam {
   position: absolute;
-  top: 16%;
-  left: 16%;
-  right: 16%;
-  height: 16%;
-  border-top: 1px solid rgba(112, 224, 255, 0.28);
-  border-bottom: 1px solid rgba(112, 224, 255, 0.12);
+  top: 18%;
+  bottom: 16%;
+  left: 50%;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, rgba(111, 224, 255, 0.26), transparent);
 }
 
 .eyeCluster {
   position: absolute;
-  top: 28%;
   left: 18%;
   right: 18%;
-  display: flex;
-  justify-content: space-between;
+  top: 26%;
+  height: 24%;
 }
 
 .eye {
-  width: 34%;
-  height: 18px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 18%;
+  height: 24px;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(77, 222, 255, 0.25), rgba(116, 243, 255, 1), rgba(77, 222, 255, 0.25));
-  box-shadow: 0 0 24px rgba(80, 222, 255, 0.66);
-  animation: eyePulse 4.8s ease-in-out infinite;
+  background: linear-gradient(90deg, rgba(88, 215, 255, 0), rgba(114, 240, 255, 1) 20%, rgba(167, 243, 255, 1) 50%, rgba(114, 240, 255, 1) 80%, rgba(88, 215, 255, 0));
+  box-shadow: 0 0 26px rgba(106, 236, 255, 0.74);
+}
+
+.eyeCore {
+  position: absolute;
+  left: 50%;
+  top: 4%;
+  width: 18%;
+  height: 54%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(196, 250, 255, 0.98), rgba(53, 194, 255, 0.78) 36%, rgba(22, 89, 255, 0.12) 66%, transparent 74%);
+  filter: blur(1px);
 }
 
 .voicePanel {
@@ -251,14 +344,14 @@
   grid-template-columns: repeat(5, 1fr);
   gap: 8px;
   align-items: end;
-  height: 52px;
+  height: 56px;
 }
 
 .voicePanel span {
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(151, 241, 255, 1), rgba(48, 165, 255, 0.3));
-  box-shadow: 0 0 18px rgba(85, 224, 255, 0.42);
-  animation: equalize 1.5s ease-in-out infinite;
+  background: linear-gradient(180deg, rgba(178, 244, 255, 1), rgba(54, 178, 255, 0.3));
+  box-shadow: 0 0 20px rgba(91, 228, 255, 0.44);
+  animation: equalize 1.6s ease-in-out infinite;
   height: 24%;
 }
 
@@ -273,10 +366,11 @@
   width: 14%;
   height: 34%;
   border-radius: 18px;
+  background: linear-gradient(180deg, rgba(120, 174, 206, 0.18), rgba(16, 42, 66, 0.9));
 }
 
-.templeLeft { left: 8%; transform: skewY(8deg); }
-.templeRight { right: 8%; transform: skewY(-8deg); }
+.templeLeft { left: 8%; transform: skewY(10deg); }
+.templeRight { right: 8%; transform: skewY(-10deg); }
 
 .neck {
   position: absolute;
@@ -293,13 +387,14 @@
   width: 28%;
   height: 100%;
   border-radius: 999px;
+  background: linear-gradient(180deg, rgba(123, 182, 218, 0.18), rgba(15, 40, 61, 0.92));
 }
 
 .torso {
   position: absolute;
   left: 50%;
   top: 52%;
-  width: 54%;
+  width: 58%;
   height: 34%;
   transform: translateX(-50%);
 }
@@ -308,31 +403,43 @@
   left: 18%;
   right: 18%;
   top: 0;
-  height: 22%;
-  border-radius: 18px 18px 28px 28px;
+  height: 20%;
+  border-radius: 20px 20px 30px 30px;
+  background: linear-gradient(180deg, rgba(133, 188, 222, 0.14), rgba(11, 33, 54, 0.92));
 }
 
 .core {
-  inset: 18% 26% 4% 26%;
-  border-radius: 30px;
-  background: linear-gradient(180deg, rgba(7, 19, 31, 0.98), rgba(11, 32, 54, 0.92));
+  inset: 18% 28% 4% 28%;
+  border-radius: 34px;
+  background: linear-gradient(180deg, rgba(9, 21, 34, 0.98), rgba(5, 14, 25, 0.98));
+}
+
+.coreRing,
+.corePulse {
+  position: absolute;
+  inset: 22%;
+  border-radius: 50%;
 }
 
 .coreRing {
-  position: absolute;
-  inset: 24%;
-  border-radius: 50%;
-  border: 1px solid rgba(121, 230, 255, 0.2);
-  box-shadow: 0 0 0 10px rgba(43, 155, 255, 0.08), 0 0 42px rgba(105, 227, 255, 0.4), inset 0 0 26px rgba(112, 232, 255, 0.16);
-  animation: coreSpin 12s linear infinite;
+  border: 1px solid rgba(120, 232, 255, 0.2);
+  box-shadow: 0 0 0 12px rgba(43, 155, 255, 0.08), 0 0 44px rgba(104, 229, 255, 0.36), inset 0 0 26px rgba(112, 232, 255, 0.16);
+  animation: spin 12s linear infinite;
+}
+
+.corePulse {
+  background: radial-gradient(circle, rgba(133, 244, 255, 0.7), rgba(33, 144, 255, 0.12) 54%, transparent 70%);
+  filter: blur(2px);
+  animation: pulse 2.6s ease-in-out infinite;
 }
 
 .shoulderLeft,
 .shoulderRight {
-  top: 10%;
-  width: 22%;
-  height: 26%;
-  border-radius: 24px;
+  top: 12%;
+  width: 23%;
+  height: 24%;
+  border-radius: 26px;
+  background: linear-gradient(180deg, rgba(118, 176, 212, 0.16), rgba(13, 37, 60, 0.94));
 }
 
 .shoulderLeft { left: 0; transform: skewX(14deg); }
@@ -340,48 +447,44 @@
 
 .stageReflection {
   position: absolute;
-  bottom: 8%;
-  width: 60%;
-  height: 40px;
+  bottom: 10%;
+  width: 62%;
+  height: 42px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(85, 219, 255, 0.2), transparent 72%);
-  filter: blur(18px);
+  background: radial-gradient(circle, rgba(88, 214, 255, 0.2), transparent 72%);
+  filter: blur(20px);
 }
 
 .robot.speaking .voicePanel span {
-  animation-duration: 0.55s;
-  height: 86%;
+  animation-duration: 0.58s;
+  height: 92%;
 }
 
-.robot.speaking .eye {
-  box-shadow: 0 0 34px rgba(102, 232, 255, 0.92);
-  animation-duration: 1s;
+.robot.speaking .eye,
+.robot.speaking .eyeCore {
+  filter: brightness(1.16);
 }
 
-.robot.speaking .coreRing {
-  box-shadow: 0 0 0 14px rgba(43, 155, 255, 0.12), 0 0 52px rgba(105, 227, 255, 0.66), inset 0 0 34px rgba(112, 232, 255, 0.26);
+.robot.speaking .corePulse {
+  animation-duration: 0.8s;
 }
 
 .robot.listening {
-  filter: saturate(1.08) brightness(1.03);
+  filter: brightness(1.04) saturate(1.08);
 }
 
-.robot.listening .voicePanel span {
-  height: 42%;
-}
-
-.consoleShell {
-  border-radius: 28px;
+.commandDeck {
+  border-radius: 30px;
   overflow: hidden;
 }
 
-.consoleHeader {
+.deckHeader {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   gap: 16px;
-  padding: 24px 26px;
-  border-bottom: 1px solid rgba(111, 219, 255, 0.12);
+  padding: 22px 24px;
+  border-bottom: 1px solid rgba(111, 221, 255, 0.1);
 }
 
 .topTitle {
@@ -392,8 +495,8 @@
 
 .topSub {
   margin-top: 4px;
-  color: rgba(187, 216, 233, 0.64);
   font-size: 13px;
+  color: rgba(189, 216, 232, 0.62);
 }
 
 .statusBadge {
@@ -413,36 +516,36 @@
   height: 10px;
   border-radius: 999px;
   background: #74ebff;
-  box-shadow: 0 0 16px currentColor;
+  box-shadow: 0 0 14px currentColor;
 }
 
 .dot.processing { background: #79d1ff; }
-.dot.typing { background: #b3f6ff; }
+.dot.typing { background: #baf7ff; }
 .dot.error { background: #ff8fab; }
 
-.consoleBody {
+.deckBody {
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
-  min-height: 660px;
+  min-height: 620px;
 }
 
-.sideRail {
+.deckSide {
   padding: 22px;
-  border-right: 1px solid rgba(111, 219, 255, 0.08);
   display: grid;
   gap: 18px;
+  border-right: 1px solid rgba(111, 221, 255, 0.08);
 }
 
-.card {
+.sidePanel {
   border-radius: 22px;
   padding: 18px;
 }
 
-.cardCopy {
+.sidePanelCopy {
   margin-top: 12px;
-  color: rgba(180, 208, 225, 0.68);
   font-size: 14px;
-  line-height: 1.65;
+  line-height: 1.72;
+  color: rgba(183, 208, 223, 0.68);
 }
 
 .chatColumn {
@@ -460,34 +563,26 @@
 }
 
 .message {
-  max-width: min(78ch, 88%);
+  max-width: min(76ch, 86%);
   padding: 16px 18px;
-  border-radius: 22px;
+  border-radius: 24px;
   border: 1px solid rgba(114, 220, 255, 0.12);
   white-space: pre-wrap;
-  line-height: 1.72;
+  line-height: 1.74;
   color: #edfaff;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
 }
 
 .assistant {
-  background: linear-gradient(180deg, rgba(11, 26, 42, 0.9), rgba(7, 17, 28, 0.86));
+  background: linear-gradient(180deg, rgba(10, 24, 40, 0.9), rgba(7, 17, 28, 0.88));
 }
 
 .user {
   margin-left: auto;
-  background: linear-gradient(180deg, rgba(32, 78, 162, 0.34), rgba(12, 35, 84, 0.72));
+  background: linear-gradient(180deg, rgba(30, 78, 170, 0.34), rgba(11, 34, 82, 0.72));
 }
 
-.messageMeta {
-  margin-bottom: 8px;
-  font-size: 11px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: rgba(116, 226, 255, 0.82);
-}
-
-.composer {
+.composerWrap {
   padding: 0 24px 24px;
 }
 
@@ -498,21 +593,19 @@
 
 .input {
   width: 100%;
-  min-height: 112px;
+  min-height: 110px;
   resize: vertical;
-  border-radius: 24px;
-  border: 1px solid rgba(104, 223, 255, 0.14);
+  border-radius: 26px;
+  border: 1px solid rgba(107, 223, 255, 0.14);
   padding: 18px 20px;
   color: #effcff;
-  background:
-    linear-gradient(180deg, rgba(7, 19, 31, 0.96), rgba(5, 14, 24, 0.96));
+  background: linear-gradient(180deg, rgba(6, 18, 29, 0.96), rgba(4, 12, 22, 0.96));
   outline: none;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 0 0 0 rgba(0,0,0,0);
 }
 
 .input:focus {
   border-color: rgba(106, 227, 255, 0.36);
-  box-shadow: 0 0 0 4px rgba(73, 189, 255, 0.1), 0 0 26px rgba(75, 196, 255, 0.1);
+  box-shadow: 0 0 0 4px rgba(73, 189, 255, 0.1), 0 0 30px rgba(75, 196, 255, 0.12);
 }
 
 .actions {
@@ -530,22 +623,22 @@
 .button {
   border: 0;
   border-radius: 999px;
-  padding: 14px 24px;
+  padding: 14px 26px;
   font-weight: 700;
   color: #031019;
-  background: linear-gradient(135deg, #77eeff, #3f92ff 60%, #7ac0ff);
-  box-shadow: 0 10px 24px rgba(42, 125, 255, 0.28), 0 0 28px rgba(88, 214, 255, 0.22);
+  background: linear-gradient(135deg, #7df0ff, #4f96ff 62%, #97d4ff);
+  box-shadow: 0 14px 30px rgba(42, 125, 255, 0.28), 0 0 28px rgba(88, 214, 255, 0.22);
   cursor: pointer;
   transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
 .button:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 16px 30px rgba(42, 125, 255, 0.34), 0 0 34px rgba(88, 214, 255, 0.3);
+  box-shadow: 0 18px 32px rgba(42, 125, 255, 0.34), 0 0 34px rgba(88, 214, 255, 0.3);
 }
 
 .button:disabled {
-  opacity: 0.46;
+  opacity: 0.44;
   cursor: not-allowed;
 }
 
@@ -562,6 +655,7 @@
   background: #70e5ff;
   animation: blink 1.1s infinite ease-in-out;
 }
+
 .typing span:nth-child(2) { animation-delay: 0.15s; }
 .typing span:nth-child(3) { animation-delay: 0.3s; }
 
@@ -571,13 +665,8 @@
 }
 
 @keyframes robotFloat {
-  0%, 100% { transform: perspective(1600px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateY(0px); }
-  50% { transform: perspective(1600px) rotateX(calc(var(--tilt-x) + 1deg)) rotateY(calc(var(--tilt-y) - 1deg)) translateY(-8px); }
-}
-
-@keyframes eyePulse {
-  0%, 100% { opacity: 0.82; }
-  50% { opacity: 1; }
+  0%, 100% { transform: perspective(1800px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateY(0px); }
+  50% { transform: perspective(1800px) rotateX(calc(var(--tilt-x) + 1deg)) rotateY(calc(var(--tilt-y) - 1deg)) translateY(-8px); }
 }
 
 @keyframes equalize {
@@ -585,9 +674,19 @@
   50% { height: 100%; opacity: 1; }
 }
 
-@keyframes coreSpin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+@keyframes pulse {
+  0%, 100% { transform: scale(0.96); opacity: 0.7; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+
+@keyframes spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes spinReverse {
+  from { transform: translate(-50%, -50%) rotate(360deg); }
+  to { transform: translate(-50%, -50%) rotate(0deg); }
 }
 
 @keyframes drift {
@@ -595,49 +694,54 @@
   to { transform: translate3d(24px, 48px, 0); }
 }
 
+@keyframes rain {
+  from { transform: translateY(-12%); }
+  to { transform: translateY(12%); }
+}
+
 @media (max-width: 1180px) {
   .hero {
     grid-template-columns: 1fr;
   }
 
-  .heroCopy {
-    order: 2;
-  }
-
-  .robotStage {
-    min-height: 560px;
-    order: 1;
-  }
-
-  .heroPanels {
-    grid-template-columns: 1fr;
+  .leftPane,
+  .centerStage {
+    min-height: 540px;
   }
 }
 
 @media (max-width: 980px) {
-  .consoleBody {
+  .deckBody {
     grid-template-columns: 1fr;
   }
 
-  .sideRail {
+  .deckSide {
     border-right: 0;
-    border-bottom: 1px solid rgba(111, 219, 255, 0.08);
+    border-bottom: 1px solid rgba(111, 221, 255, 0.08);
   }
 }
 
-@media (max-width: 680px) {
+@media (max-width: 700px) {
   .frame {
-    padding: 22px 14px 20px;
+    padding: 18px 12px 18px;
   }
 
-  .robotStage {
-    min-height: 440px;
+  .leftPane,
+  .centerStage {
+    min-height: 420px;
+    padding: 20px 16px;
   }
 
-  .consoleHeader,
+  .hudPanelTop,
+  .hudPanelBottom {
+    width: 170px;
+    padding: 12px;
+  }
+
+  .deckHeader,
   .messages,
-  .composer,
-  .sideRail {
+  .composerWrap,
+  .deckSide {
     padding-left: 16px;
     padding-right: 16px;
   }
