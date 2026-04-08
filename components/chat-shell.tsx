@@ -20,7 +20,7 @@ export function ChatShell({ appName, assistantName }: Props) {
     {
       id: makeId(),
       role: 'assistant',
-      content: `Hey — ${assistantName} here. Welcome to the blue hour. Ask me anything.`,
+      content: `Xena online. Direct gateway link stable. You can speak now.`,
       createdAt: nowIso()
     }
   ]);
@@ -57,10 +57,10 @@ export function ChatShell({ appName, assistantName }: Props) {
   }, [assistantName, presence]);
 
   const robotStyle = {
-    '--look-x': `${pointer.x * 16}px`,
-    '--look-y': `${pointer.y * 12}px`,
-    '--tilt-x': `${pointer.y * -8}deg`,
-    '--tilt-y': `${pointer.x * 10}deg`
+    '--look-x': `${pointer.x * 18}px`,
+    '--look-y': `${pointer.y * 14}px`,
+    '--tilt-x': `${pointer.y * -9}deg`,
+    '--tilt-y': `${pointer.x * 12}deg`
   } as React.CSSProperties;
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -171,78 +171,97 @@ export function ChatShell({ appName, assistantName }: Props) {
       <div className={styles.noise} />
       <div className={styles.grid} />
       <div className={styles.particles} />
+      <div className={styles.codeRain} />
 
       <main className={styles.frame}>
         <section className={styles.hero}>
-          <div className={styles.heroCopy}>
-            <div className={styles.eyebrow}>Experimental branch · premium synth interface</div>
+          <div className={styles.leftPane}>
+            <div className={styles.signalBar}>
+              <span />
+              <span />
+              <span />
+            </div>
+            <div className={styles.eyebrow}>Experimental branch · pass 1 · elite blue matrix system</div>
             <h1 className={styles.heroTitle}>{appName}</h1>
             <p className={styles.heroText}>
-              An elite AI surface in deep electric blue — cinematic, reactive, and alive. The intelligence is present, watching, listening, answering.
+              A cinematic AI surface built around a living machine presence — deep electric blues, black glass, and a control deck anchored to a real OpenClaw gateway.
             </p>
-
-            <div className={styles.heroPanels}>
-              <div className={styles.infoCard}>
-                <span className={styles.infoLabel}>Mode</span>
-                <span className={styles.infoValue}>{robotMode}</span>
+            <div className={styles.heroStats}>
+              <div className={styles.statPanel}>
+                <div className={styles.statLabel}>Presence</div>
+                <div className={styles.statValue}>{robotMode}</div>
               </div>
-              <div className={styles.infoCard}>
-                <span className={styles.infoLabel}>State</span>
-                <span className={styles.infoValue}>{label.replace(`${assistantName} is `, '')}</span>
+              <div className={styles.statPanel}>
+                <div className={styles.statLabel}>Voice channel</div>
+                <div className={styles.statValue}>{label.replace(`${assistantName} is `, '')}</div>
               </div>
-              <div className={styles.infoCard}>
-                <span className={styles.infoLabel}>Link</span>
-                <span className={styles.infoValue}>gateway live</span>
+              <div className={styles.statPanel}>
+                <div className={styles.statLabel}>Path</div>
+                <div className={styles.statValue}>browser → gateway</div>
               </div>
             </div>
           </div>
 
-          <div className={styles.robotStage} style={robotStyle}>
-            <div className={styles.halo} />
-            <div className={`${styles.robot} ${styles[robotMode]}`}>
-              <div className={styles.robotAura} />
-              <div className={styles.robotHead}>
-                <div className={styles.cranium} />
-                <div className={styles.facePlate}>
-                  <div className={styles.brow} />
-                  <div className={styles.eyeCluster}>
-                    <span className={styles.eye} />
-                    <span className={styles.eye} />
-                  </div>
-                  <div className={styles.voicePanel}>
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                  </div>
-                </div>
-                <div className={styles.templeLeft} />
-                <div className={styles.templeRight} />
-              </div>
-              <div className={styles.neck}>
-                <span />
-                <span />
-                <span />
-              </div>
-              <div className={styles.torso}>
-                <div className={styles.collar} />
-                <div className={styles.core}>
-                  <div className={styles.coreRing} />
-                </div>
-                <div className={styles.shoulderLeft} />
-                <div className={styles.shoulderRight} />
-              </div>
+          <div className={styles.centerStage}>
+            <div className={styles.orbitOne} />
+            <div className={styles.orbitTwo} />
+            <div className={styles.hudPanelTop}>
+              <span className={styles.hudLabel}>Neural status</span>
+              <strong>{statusText}</strong>
             </div>
-            <div className={styles.stageReflection} />
+            <div className={styles.hudPanelBottom}>
+              <span className={styles.hudLabel}>Operator link</span>
+              <strong>direct gateway mode</strong>
+            </div>
+
+            <div className={styles.robotStage} style={robotStyle}>
+              <div className={styles.halo} />
+              <div className={`${styles.robot} ${styles[robotMode]}`}>
+                <div className={styles.robotAura} />
+                <div className={styles.robotHead}>
+                  <div className={styles.cranium} />
+                  <div className={styles.facePlate}>
+                    <div className={styles.faceSeam} />
+                    <div className={styles.eyeCluster}>
+                      <span className={styles.eye} />
+                      <span className={styles.eyeCore} />
+                    </div>
+                    <div className={styles.voicePanel}>
+                      <span />
+                      <span />
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+                  </div>
+                  <div className={styles.templeLeft} />
+                  <div className={styles.templeRight} />
+                </div>
+                <div className={styles.neck}>
+                  <span />
+                  <span />
+                  <span />
+                </div>
+                <div className={styles.torso}>
+                  <div className={styles.collar} />
+                  <div className={styles.core}>
+                    <div className={styles.coreRing} />
+                    <div className={styles.corePulse} />
+                  </div>
+                  <div className={styles.shoulderLeft} />
+                  <div className={styles.shoulderRight} />
+                </div>
+              </div>
+              <div className={styles.stageReflection} />
+            </div>
           </div>
         </section>
 
-        <section className={styles.consoleShell}>
-          <div className={styles.consoleHeader}>
+        <section className={styles.commandDeck}>
+          <div className={styles.deckHeader}>
             <div>
               <div className={styles.topTitle}>{assistantName}</div>
-              <div className={styles.topSub}>Blue-matrix cognition channel · direct gateway mode</div>
+              <div className={styles.topSub}>Immersive control deck · direct OpenClaw link · premium experimental shell</div>
             </div>
             <div className={styles.statusBadge}>
               <span className={`${styles.dot} ${styles[presence] || ''}`} />
@@ -250,19 +269,19 @@ export function ChatShell({ appName, assistantName }: Props) {
             </div>
           </div>
 
-          <div className={styles.consoleBody}>
-            <aside className={styles.sideRail}>
-              <div className={styles.card}>
-                <div className={styles.cardTitle}>Signal</div>
-                <div className={styles.metric}>{robotMode}</div>
-                <div className={styles.cardCopy}>Micro-reactive presence, subtle servo motion, responsive eye tracking.</div>
+          <div className={styles.deckBody}>
+            <div className={styles.deckSide}>
+              <div className={styles.sidePanel}>
+                <div className={styles.sidePanelLabel}>Machine</div>
+                <div className={styles.sidePanelValue}>{robotMode}</div>
+                <p className={styles.sidePanelCopy}>Passive posture in silence. Focus shift during input. Active voice lattice during response generation.</p>
               </div>
-              <div className={styles.card}>
-                <div className={styles.cardTitle}>Status</div>
-                <div className={styles.metric}>{label}</div>
-                <div className={styles.cardCopy}>The voice lattice brightens during generation and softens back into idle after response.</div>
+              <div className={styles.sidePanel}>
+                <div className={styles.sidePanelLabel}>Signal</div>
+                <div className={styles.sidePanelValue}>stable</div>
+                <p className={styles.sidePanelCopy}>The visual pass is now hero-first. Functionality remains chained to the browser-to-gateway route.</p>
               </div>
-            </aside>
+            </div>
 
             <div className={styles.chatColumn}>
               <div className={styles.messages}>
@@ -283,7 +302,7 @@ export function ChatShell({ appName, assistantName }: Props) {
                 ))}
               </div>
 
-              <div className={styles.composer}>
+              <div className={styles.composerWrap}>
                 <form className={styles.form} onSubmit={onSubmit}>
                   <textarea
                     className={styles.input}
@@ -291,7 +310,7 @@ export function ChatShell({ appName, assistantName }: Props) {
                     onChange={(event) => setDraft(event.target.value)}
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
-                    placeholder={`Speak to ${assistantName}...`}
+                    placeholder={`Transmit to ${assistantName}...`}
                   />
                   <div className={styles.actions}>
                     <div className={styles.helper}>{error ? `Last error: ${error}` : 'Direct browser → gateway path'}</div>
