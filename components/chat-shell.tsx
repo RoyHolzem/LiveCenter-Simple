@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useMemo, useRef, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import styles from './chat-shell.module.css';
 import type { ChatMessage, PresenceState } from '@/lib/types';
 import { makeId } from '@/lib/utils';
@@ -11,6 +11,8 @@ type Props = {
   assistantName: string;
 };
 
+type RobotMode = 'idle' | 'listening' | 'speaking';
+
 const nowIso = () => new Date().toISOString();
 
 export function ChatShell({ appName, assistantName }: Props) {
@@ -18,7 +20,7 @@ export function ChatShell({ appName, assistantName }: Props) {
     {
       id: makeId(),
       role: 'assistant',
-      content: `Hey — ${assistantName} here. Drop a message and I’ll answer through the OpenClaw gateway.`,
+      content: `Hey — ${assistantName} here. Welcome to the blue hour. Ask me anything.`,
       createdAt: nowIso()
     }
   ]);
@@ -26,14 +28,40 @@ export function ChatShell({ appName, assistantName }: Props) {
   const [presence, setPresence] = useState<PresenceState>('idle');
   const [statusText, setStatusText] = useState(`${assistantName} is idle`);
   const [error, setError] = useState<string | null>(null);
+  const [pointer, setPointer] = useState({ x: 0, y: 0 });
+  const [isFocused, setIsFocused] = useState(false);
   const assistantBufferRef = useRef('');
+
+  useEffect(() => {
+    const onMove = (event: MouseEvent) => {
+      const x = (event.clientX / window.innerWidth - 0.5) * 2;
+      const y = (event.clientY / window.innerHeight - 0.5) * 2;
+      setPointer({ x, y });
+    };
+
+    window.addEventListener('mousemove', onMove);
+    return () => window.removeEventListener('mousemove', onMove);
+  }, []);
+
+  const robotMode: RobotMode = useMemo(() => {
+    if (presence === 'typing') return 'speaking';
+    if (presence === 'processing' || isFocused) return 'listening';
+    return 'idle';
+  }, [presence, isFocused]);
 
   const label = useMemo(() => {
     if (presence === 'processing') return `${assistantName} is processing`;
-    if (presence === 'typing') return `${assistantName} is typing`;
+    if (presence === 'typing') return `${assistantName} is speaking`;
     if (presence === 'error') return 'Connection issue';
     return `${assistantName} is idle`;
   }, [assistantName, presence]);
+
+  const robotStyle = {
+    '--look-x': `${pointer.x * 16}px`,
+    '--look-y': `${pointer.y * 12}px`,
+    '--tilt-x': `${pointer.y * -8}deg`,
+    '--tilt-y': `${pointer.x * 10}deg`
+  } as React.CSSProperties;
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -112,7 +140,7 @@ export function ChatShell({ appName, assistantName }: Props) {
           const delta = json.choices?.[0]?.delta?.content ?? json.choices?.[0]?.message?.content;
           if (delta) {
             setPresence('typing');
-            setStatusText(`${assistantName} is typing`);
+            setStatusText(`${assistantName} is speaking`);
             assistantBufferRef.current += delta;
             const text = assistantBufferRef.current;
             setMessages((current) =>
@@ -140,45 +168,81 @@ export function ChatShell({ appName, assistantName }: Props) {
 
   return (
     <div className={styles.shell}>
-      <div className={styles.frame}>
-        <aside className={styles.sidebar}>
-          <div className={styles.brand}>
-            <div className={styles.eyebrow}>OpenClaw Gateway UI</div>
-            <div className={styles.title}>{appName}</div>
-            <div className={styles.copy}>
-              A custom standalone chat surface for Xena — not the dashboard. Dark glass, cyan glow, matrix energy.
-            </div>
-          </div>
+      <div className={styles.noise} />
+      <div className={styles.grid} />
+      <div className={styles.particles} />
 
-          <div className={styles.card}>
-            <div className={styles.statusRow}>
-              <div>
-                <div className={styles.eyebrow}>Presence</div>
-                <div style={{ marginTop: 8, fontWeight: 600 }}>{statusText}</div>
+      <main className={styles.frame}>
+        <section className={styles.hero}>
+          <div className={styles.heroCopy}>
+            <div className={styles.eyebrow}>Experimental branch · premium synth interface</div>
+            <h1 className={styles.heroTitle}>{appName}</h1>
+            <p className={styles.heroText}>
+              An elite AI surface in deep electric blue — cinematic, reactive, and alive. The intelligence is present, watching, listening, answering.
+            </p>
+
+            <div className={styles.heroPanels}>
+              <div className={styles.infoCard}>
+                <span className={styles.infoLabel}>Mode</span>
+                <span className={styles.infoValue}>{robotMode}</span>
               </div>
-              <div className={styles.statusBadge}>
-                <span className={`${styles.dot} ${styles[presence] || ''}`} />
-                {label.replace(`${assistantName} is `, '')}
+              <div className={styles.infoCard}>
+                <span className={styles.infoLabel}>State</span>
+                <span className={styles.infoValue}>{label.replace(`${assistantName} is `, '')}</span>
+              </div>
+              <div className={styles.infoCard}>
+                <span className={styles.infoLabel}>Link</span>
+                <span className={styles.infoValue}>gateway live</span>
               </div>
             </div>
           </div>
 
-          <div className={styles.card}>
-            <div className={styles.eyebrow}>Deploy model</div>
-            <div className={styles.metaList}>
-              <div>• Next.js app router</div>
-              <div>• Amplify Hosting</div>
-              <div>• Direct browser → gateway path</div>
-              <div>• Streaming responses + presence</div>
+          <div className={styles.robotStage} style={robotStyle}>
+            <div className={styles.halo} />
+            <div className={`${styles.robot} ${styles[robotMode]}`}>
+              <div className={styles.robotAura} />
+              <div className={styles.robotHead}>
+                <div className={styles.cranium} />
+                <div className={styles.facePlate}>
+                  <div className={styles.brow} />
+                  <div className={styles.eyeCluster}>
+                    <span className={styles.eye} />
+                    <span className={styles.eye} />
+                  </div>
+                  <div className={styles.voicePanel}>
+                    <span />
+                    <span />
+                    <span />
+                    <span />
+                    <span />
+                  </div>
+                </div>
+                <div className={styles.templeLeft} />
+                <div className={styles.templeRight} />
+              </div>
+              <div className={styles.neck}>
+                <span />
+                <span />
+                <span />
+              </div>
+              <div className={styles.torso}>
+                <div className={styles.collar} />
+                <div className={styles.core}>
+                  <div className={styles.coreRing} />
+                </div>
+                <div className={styles.shoulderLeft} />
+                <div className={styles.shoulderRight} />
+              </div>
             </div>
+            <div className={styles.stageReflection} />
           </div>
-        </aside>
+        </section>
 
-        <section className={styles.main}>
-          <div className={styles.topbar}>
+        <section className={styles.consoleShell}>
+          <div className={styles.consoleHeader}>
             <div>
               <div className={styles.topTitle}>{assistantName}</div>
-              <div className={styles.topSub}>Connected through OpenClaw Gateway</div>
+              <div className={styles.topSub}>Blue-matrix cognition channel · direct gateway mode</div>
             </div>
             <div className={styles.statusBadge}>
               <span className={`${styles.dot} ${styles[presence] || ''}`} />
@@ -186,42 +250,61 @@ export function ChatShell({ appName, assistantName }: Props) {
             </div>
           </div>
 
-          <div className={styles.messages}>
-            {messages.map((message) => (
-              <article
-                key={message.id}
-                className={`${styles.message} ${message.role === 'user' ? styles.user : styles.assistant}`}
-              >
-                <div className={styles.messageMeta}>{message.role === 'user' ? 'You' : assistantName}</div>
-                {message.content || (
-                  <div className={styles.typing}>
-                    <span />
-                    <span />
-                    <span />
-                  </div>
-                )}
-              </article>
-            ))}
-          </div>
-
-          <div className={styles.composer}>
-            <form className={styles.form} onSubmit={onSubmit}>
-              <textarea
-                className={styles.input}
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
-                placeholder={`Message ${assistantName}...`}
-              />
-              <div className={styles.actions}>
-                <div className={styles.helper}>{error ? `Last error: ${error}` : 'Direct gateway mode enabled.'}</div>
-                <button className={styles.button} type="submit" disabled={!draft.trim() || presence === 'processing' || presence === 'typing'}>
-                  Send message
-                </button>
+          <div className={styles.consoleBody}>
+            <aside className={styles.sideRail}>
+              <div className={styles.card}>
+                <div className={styles.cardTitle}>Signal</div>
+                <div className={styles.metric}>{robotMode}</div>
+                <div className={styles.cardCopy}>Micro-reactive presence, subtle servo motion, responsive eye tracking.</div>
               </div>
-            </form>
+              <div className={styles.card}>
+                <div className={styles.cardTitle}>Status</div>
+                <div className={styles.metric}>{label}</div>
+                <div className={styles.cardCopy}>The voice lattice brightens during generation and softens back into idle after response.</div>
+              </div>
+            </aside>
+
+            <div className={styles.chatColumn}>
+              <div className={styles.messages}>
+                {messages.map((message) => (
+                  <article
+                    key={message.id}
+                    className={`${styles.message} ${message.role === 'user' ? styles.user : styles.assistant}`}
+                  >
+                    <div className={styles.messageMeta}>{message.role === 'user' ? 'Operator' : assistantName}</div>
+                    {message.content || (
+                      <div className={styles.typing}>
+                        <span />
+                        <span />
+                        <span />
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </div>
+
+              <div className={styles.composer}>
+                <form className={styles.form} onSubmit={onSubmit}>
+                  <textarea
+                    className={styles.input}
+                    value={draft}
+                    onChange={(event) => setDraft(event.target.value)}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                    placeholder={`Speak to ${assistantName}...`}
+                  />
+                  <div className={styles.actions}>
+                    <div className={styles.helper}>{error ? `Last error: ${error}` : 'Direct browser → gateway path'}</div>
+                    <button className={styles.button} type="submit" disabled={!draft.trim() || presence === 'processing' || presence === 'typing'}>
+                      Transmit
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
           </div>
         </section>
-      </div>
+      </main>
     </div>
   );
 }
