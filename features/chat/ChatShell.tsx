@@ -1,10 +1,10 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState, useRef, type CSSProperties } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { AvatarStage } from './avatar/AvatarStage';
 import { AmbientFx } from './chrome/AmbientFx';
-import styles from './chat-shell.module.css';
 import { publicConfig } from './chat-config';
+import styles from './chat-shell.module.css';
 import type { AvatarState, ChatMessage, PresenceState } from './chat-types';
 import { cn, makeId } from './chat-utils';
 
@@ -47,18 +47,11 @@ export function ChatShell() {
     return 'idle';
   }, [draft, isFocused, presence]);
 
-  const presenceCopy = useMemo(() => {
-    if (presence === 'processing') return 'processing';
-    if (presence === 'typing') return 'streaming';
-    if (presence === 'error') return 'connection issue';
-    return 'stable';
-  }, [presence]);
-
   const pointerStyle = {
     '--look-x': `${pointer.x * 18}px`,
-    '--look-y': `${pointer.y * 16}px`,
-    '--tilt-x': `${pointer.y * -8}deg`,
-    '--tilt-y': `${pointer.x * 10}deg`
+    '--look-y': `${pointer.y * 14}px`,
+    '--tilt-x': `${pointer.y * -7}deg`,
+    '--tilt-y': `${pointer.x * 9}deg`
   } as CSSProperties;
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -169,30 +162,7 @@ export function ChatShell() {
       <AmbientFx />
 
       <main className={styles.frame}>
-        <section className={styles.topBand}>
-          <div className={styles.intelCard}>
-            <div className={styles.panelEyebrow}>Blue matrix entity</div>
-            <h2 className={styles.cardTitle}>{assistantName}</h2>
-            <p className={styles.cardCopy}>
-              Elegant synthetic presence, direct stream link, cinematic black-glass console.
-            </p>
-
-            <div className={styles.metricGrid}>
-              <div className={styles.metricCard}>
-                <span className={styles.metricLabel}>Presence</span>
-                <strong>{avatarState}</strong>
-              </div>
-              <div className={styles.metricCard}>
-                <span className={styles.metricLabel}>Signal</span>
-                <strong>{presenceCopy}</strong>
-              </div>
-              <div className={styles.metricCard}>
-                <span className={styles.metricLabel}>Path</span>
-                <strong>browser to gateway</strong>
-              </div>
-            </div>
-          </div>
-
+        <section className={styles.scene}>
           <AvatarStage
             appName={appName}
             assistantName={assistantName}
@@ -200,48 +170,36 @@ export function ChatShell() {
             statusText={statusText}
             pointerStyle={pointerStyle}
           />
-        </section>
 
-        <section className={styles.console}>
-          <div className={styles.consoleHeader}>
-            <div>
-              <div className={styles.panelEyebrow}>Conversation core</div>
-              <div className={styles.consoleTitle}>{assistantName}</div>
-            </div>
-            <div className={styles.consoleStatus} aria-live="polite">
-              <span
-                className={cn(
-                  styles.statusDot,
-                  presence === 'idle' && styles.presenceIdle,
-                  presence === 'processing' && styles.presenceProcessing,
-                  presence === 'typing' && styles.presenceTyping,
-                  presence === 'error' && styles.presenceError
-                )}
-              />
-              <span>{statusText}</span>
-            </div>
-          </div>
+          <div className={styles.sceneTint} />
 
-          <div className={styles.consoleBody}>
-            <aside className={styles.sideRail}>
-              <div className={styles.sidePanel}>
-                <span className={styles.metricLabel}>Avatar state</span>
-                <strong>{avatarState}</strong>
-                <p className={styles.sideCopy}>
-                  Idle when calm, attentive while you prepare a prompt, focused while the backend
-                  thinks, expressive while the stream speaks.
+          <section className={styles.chatDock}>
+            <header className={styles.consoleHeader}>
+              <div className={styles.identityBlock}>
+                <div className={styles.panelEyebrow}>Synthetic relay interface</div>
+                <h1 className={styles.consoleTitle}>{assistantName}</h1>
+                <p className={styles.consoleCopy}>
+                  A direct conversation surface anchored to the live gateway, wrapped in a quiet,
+                  high-voltage sci-fi shell.
                 </p>
               </div>
 
-              <div className={styles.sidePanel}>
-                <span className={styles.metricLabel}>Usability guard</span>
-                <strong>chat preserved</strong>
-                <p className={styles.sideCopy}>
-                  Messages, input, submit, scroll region, stream parsing, and gateway connectivity
-                  stay untouched in behavior.
-                </p>
+              <div className={styles.statusCluster}>
+                <div className={styles.statusPill} aria-live="polite">
+                  <span
+                    className={cn(
+                      styles.statusDot,
+                      presence === 'idle' && styles.presenceIdle,
+                      presence === 'processing' && styles.presenceProcessing,
+                      presence === 'typing' && styles.presenceTyping,
+                      presence === 'error' && styles.presenceError
+                    )}
+                  />
+                  <span>{statusText}</span>
+                </div>
+                <div className={styles.modePill}>{avatarState}</div>
               </div>
-            </aside>
+            </header>
 
             <div className={styles.chatColumn}>
               <div className={styles.messages} aria-live="polite" aria-busy={presence !== 'idle'}>
@@ -282,6 +240,10 @@ export function ChatShell() {
                     <div className={styles.helper}>
                       {error ? `Last error: ${error}` : 'Direct browser to gateway path'}
                     </div>
+                    <div className={styles.consoleTags}>
+                      <span className={styles.consoleTag}>{appName}</span>
+                      <span className={styles.consoleTag}>browser to gateway</span>
+                    </div>
                     <button
                       className={styles.button}
                       type="submit"
@@ -293,7 +255,7 @@ export function ChatShell() {
                 </form>
               </div>
             </div>
-          </div>
+          </section>
         </section>
       </main>
     </div>
