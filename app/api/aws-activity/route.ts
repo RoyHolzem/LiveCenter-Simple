@@ -1,17 +1,14 @@
 import { CloudTrailClient, LookupEventsCommand } from '@aws-sdk/client-cloudtrail';
 import { NextResponse } from 'next/server';
 
-const region = process.env.CT_AWS_REGION || process.env.AWS_REGION || 'eu-central-1';
+const region = process.env.NEXT_PUBLIC_CT_AWS_REGION || 'eu-central-1';
 
-// Amplify blocks AWS_ prefixed env vars, so we use CT_ prefix instead
 const client = new CloudTrailClient({
   region,
-  credentials: (process.env.CT_AWS_ACCESS_KEY_ID && process.env.CT_AWS_SECRET_ACCESS_KEY)
-    ? {
-        accessKeyId: process.env.CT_AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.CT_AWS_SECRET_ACCESS_KEY,
-      }
-    : undefined, // falls back to default credential chain (IAM role on EC2/Lambda)
+  credentials: {
+    accessKeyId: process.env.NEXT_PUBLIC_CT_AWS_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.NEXT_PUBLIC_CT_AWS_SECRET_ACCESS_KEY || '',
+  },
 });
 
 // ─── Service → category map ───
