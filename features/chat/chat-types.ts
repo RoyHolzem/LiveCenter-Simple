@@ -18,7 +18,7 @@ export type ConsoleEntry = {
   message: string;
 };
 
-/* ─── Xena Action Events ─── */
+/* ─── Xena SSE Action Events (gateway-emitted) ─── */
 
 export type XenaActionCategory =
   | 'lambda'
@@ -33,6 +33,17 @@ export type XenaActionCategory =
   | 'sns'
   | 'sqs'
   | 'cdk'
+  | 'lightsail'
+  | 'cloudfront'
+  | 'route53'
+  | 'cloudwatch'
+  | 'logs'
+  | 'ssm'
+  | 'secretsmanager'
+  | 'kms'
+  | 'cognito'
+  | 'bedrock'
+  | 'sagemaker'
   | 'general';
 
 export type XenaActionVerb =
@@ -45,7 +56,11 @@ export type XenaActionVerb =
   | 'described'
   | 'configured'
   | 'scaled'
-  | 'checked';
+  | 'checked'
+  | 'started'
+  | 'stopped'
+  | 'modified'
+  | 'published';
 
 export type XenaActionEvent = {
   type: 'action';
@@ -71,13 +86,18 @@ export type XenaDoneEvent = {
 
 export type XenaSSEEvent = XenaActionEvent | XenaContentEvent | XenaDoneEvent;
 
+/* ─── Activity Log Entry (unified: SSE + CloudTrail) ─── */
+
+export type ActionSource = 'xena' | 'cloudtrail';
+
 export type ActionLogEntry = {
   id: string;
   timestamp: string;
-  verb: XenaActionVerb;
-  category: XenaActionCategory;
+  verb: string;
+  category: string;
   label: string;
   resource?: string;
   region?: string;
   detail?: string;
+  source: ActionSource;
 };

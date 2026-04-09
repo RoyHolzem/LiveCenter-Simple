@@ -357,14 +357,40 @@
 
 .verb_listed,
 .verb_described,
-.verb_checked {
+.verb_checked,
+.verb_got,
+.verb_put {
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-tertiary);
 }
 
-.verb_scaled {
+.verb_scaled,
+.verb_started,
+.verb_stopped,
+.verb_modified {
   background: var(--amber-muted);
   color: var(--amber);
+}
+
+.verb_attached,
+.verb_detached,
+.verb_enabled,
+.verb_disabled,
+.verb_published {
+  background: rgba(168, 85, 247, 0.15);
+  color: #a855f7;
+}
+
+.verb_subscribed,
+.verb_sent {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-hover);
+}
+
+/* Catch-all for unrecognized verbs */
+.actionVerb {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-tertiary);
 }
 
 .actionCat {
@@ -390,6 +416,33 @@
 .cat_sns { color: #ef4444; }
 .cat_sqs { color: #a855f7; }
 .cat_cdk { color: #22c55e; }
+.cat_lightsail { color: #f97316; }
+.cat_cloudfront { color: #8b5cf6; }
+.cat_route53 { color: #22c55e; }
+.cat_cloudwatch { color: #ef4444; }
+.cat_logs { color: #3b82f6; }
+.cat_ssm { color: #22c55e; }
+.cat_secretsmanager { color: #f59e0b; }
+.cat_kms { color: #ef4444; }
+.cat_cognito { color: #a855f7; }
+.cat_bedrock { color: #8b5cf6; }
+.cat_sagemaker { color: #f59e0b; }
+.cat_elb { color: #f97316; }
+.cat_autoscaling { color: #3b82f6; }
+.cat_acm { color: #22c55e; }
+
+.actionSource {
+  font-size: 10px;
+  line-height: 1;
+}
+
+.src_xena {
+  color: var(--accent);
+}
+
+.src_cloudtrail {
+  color: #f97316;
+}
 
 .actionTime {
   font-size: 10px;

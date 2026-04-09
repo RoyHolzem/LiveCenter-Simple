@@ -5,6 +5,7 @@ import { publicConfig } from './chat-config';
 import styles from './chat-shell.module.css';
 import type {
   ActionLogEntry,
+  ActionSource,
   AvatarState,
   ChatMessage,
   ConsoleEntry,
@@ -21,6 +22,7 @@ const ts = () => {
 
 const GH_REPO = 'RoyHolzem/LiveCenter-Simple';
 const GH_BRANCH = 'experimental';
+const CT_POLL_INTERVAL = 15000; // 15s
 
 export function ChatShell() {
   const { appName, assistantName } = publicConfig;
@@ -45,6 +47,9 @@ export function ChatShell() {
   const [actionLog, setActionLog] = useState<ActionLogEntry[]>([]);
   const [ghStatus, setGhStatus] = useState<'connected' | 'checking' | 'error'>('checking');
   const [ghCommit, setGhCommit] = useState<string>('—');
+  const [awsStatus, setAwsStatus] = useState<'connected' | 'checking' | 'error'>('checking');
+  const [lastCtFetch, setLastCtFetch] = useState<string>('');
+  const seenActionIds = useRef<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const consoleEndRef = useRef<HTMLDivElement>(null);
   const actionEndRef = useRef<HTMLDivElement>(null);
@@ -55,22 +60,61 @@ export function ChatShell() {
     setConsoleLog((prev) => [...prev, { id: makeId(), timestamp: ts(), type, message }]);
   }, []);
 
-  const addAction = useCallback((event: XenaActionEvent) => {
-    const entry: ActionLogEntry = {
-      id: event.id || makeId(),
+  const addAction = useCallback((entry: { id?: string; timestamp: string; verb: string; category: string; label: string; resource?: string; region?: string; detail?: string }, source: ActionSource) => {
+    const id = entry.id || makeId();
+    if (seenActionIds.current.has(id)) return;
+    seenActionIds.current.add(id);
+    const full: ActionLogEntry = { ...entry, id, source };
+    setActionLog((prev) => [...prev, full]);
+  }, []);
+
+  const addXenaAction = useCallback((event: XenaActionEvent) => {
+    addAction({
       timestamp: event.timestamp || ts(),
       verb: event.verb,
       category: event.category,
       label: event.label,
       resource: event.resource,
       region: event.region,
-      detail: event.detail
-    };
-    setActionLog((prev) => [...prev, entry]);
-    addLog('action', `${event.verb} ${event.category}: ${event.label}${event.region ? ` (${event.region})` : ''}`);
-  }, [addLog]);
+      detail: event.detail,
+    }, 'xena');
+    addLog('action', `[Xena] ${event.verb} ${event.category}: ${event.label}${event.region ? ` (${event.region})` : ''}`);
+  }, [addAction, addLog]);
 
-  // GitHub status check
+  // ─── CloudTrail Polling ───
+  useEffect(() => {
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const res = await fetch('/api/aws-activity?minutes=30');
+        if (!res.ok) throw new Error('API error');
+        const data = await res.json();
+        if (cancelled) return;
+        setAwsStatus('connected');
+        setLastCtFetch(ts());
+        if (data.actions) {
+          for (const a of data.actions) {
+            addAction({
+              timestamp: new Date(a.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+              verb: a.verb,
+              category: a.category,
+              label: a.label,
+              resource: a.resource,
+              region: a.region,
+              detail: a.detail,
+            }, 'cloudtrail');
+          }
+        }
+      } catch {
+        if (!cancelled) setAwsStatus('error');
+      }
+    };
+    poll();
+    const interval = setInterval(poll, CT_POLL_INTERVAL);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [addAction]);
+
+  // ─── GitHub Status ───
   useEffect(() => {
     let cancelled = false;
     const check = async () => {
@@ -214,23 +258,20 @@ export function ChatShell() {
             continue;
           }
 
-          // ─── Try typed event first ───
           try {
             const parsed = JSON.parse(raw);
 
-            // Xena action event: { type: "action", verb, category, label, ... }
+            // Xena action event
             if (parsed.type === 'action') {
-              addAction(parsed as XenaActionEvent);
+              addXenaAction(parsed as XenaActionEvent);
               continue;
             }
 
-            // Standard OpenAI-format content
+            // Standard OpenAI content
             const delta = parsed.choices?.[0]?.delta?.content ?? parsed.choices?.[0]?.message?.content;
             if (delta) {
               chunkCount++;
-              if (chunkCount === 1) {
-                addLog('stream', `First token received — generating response`);
-              }
+              if (chunkCount === 1) addLog('stream', `First token received — generating response`);
               setPresence('typing');
               assistantBufferRef.current += delta;
               const text = assistantBufferRef.current;
@@ -241,7 +282,7 @@ export function ChatShell() {
               );
             }
           } catch {
-            // Non-JSON SSE line — ignore
+            // Non-JSON SSE — ignore
           }
         }
       }
@@ -258,7 +299,7 @@ export function ChatShell() {
         )
       );
     }
-  }, [draft, messages, presence, addLog, addAction]);
+  }, [draft, messages, presence, addLog, addXenaAction]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -309,10 +350,10 @@ export function ChatShell() {
         </div>
 
         <div className={styles.sessionInfo}>
-          <div className={styles.sessionLabel}>GitHub</div>
+          <div className={styles.sessionLabel}>Connections</div>
           <div className={styles.sessionMeta}>
             <div className={styles.metaRow}>
-              <span className={styles.metaKey}>Connection</span>
+              <span className={styles.metaKey}>GitHub</span>
               <span className={cn(styles.metaVal, styles.ghStatus, styles[`gh_${ghStatus}`])}>
                 <span className={styles.ghDot} />
                 {ghStatus === 'connected' ? 'Connected' : ghStatus === 'checking' ? 'Checking...' : 'Error'}
@@ -325,6 +366,13 @@ export function ChatShell() {
             <div className={styles.metaRow}>
               <span className={styles.metaKey}>Version</span>
               <span className={styles.metaValMono}>{ghCommit}</span>
+            </div>
+            <div className={styles.metaRow}>
+              <span className={styles.metaKey}>AWS CloudTrail</span>
+              <span className={cn(styles.metaVal, styles.ghStatus, styles[`gh_${awsStatus}`])}>
+                <span className={styles.ghDot} />
+                {awsStatus === 'connected' ? 'Live' : awsStatus === 'checking' ? 'Connecting...' : 'Error'}
+              </span>
             </div>
           </div>
         </div>
@@ -350,10 +398,13 @@ export function ChatShell() {
                     <span className={cn(styles.actionCat, styles[`cat_${entry.category}`])}>
                       {entry.category}
                     </span>
+                    <span className={cn(styles.actionSource, styles[`src_${entry.source}`])}>
+                      {entry.source === 'xena' ? '⚡' : '☁'}
+                    </span>
                     <span className={styles.actionTime}>{entry.timestamp}</span>
                   </div>
                   <div className={styles.actionLabel}>{entry.label}</div>
-                  {entry.resource && (
+                  {entry.resource && entry.resource !== '—' && (
                     <div className={styles.actionResource}>{entry.resource}</div>
                   )}
                   {entry.region && (
