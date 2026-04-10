@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: LiveCenter Simple Amplify Hosting stack
+Description: LiveCenter Simple Amplify Hosting stack with Cognito OAuth, Amplify Hosting, and incident data store.
 
 Parameters:
   AppName:
@@ -37,8 +37,116 @@ Parameters:
   SystemPrompt:
     Type: String
     Default: You are Xena, a warm, sharp, resourceful cloud spirit. Keep answers helpful, direct, and concise.
+  CognitoUserPoolName:
+    Type: String
+    Default: livecenter-simple-users
+  CognitoDomainPrefix:
+    Type: String
+    Default: livecenter-simple-auth
+    Description: Must be globally unique in the region for Cognito hosted domain support.
+  AppBaseUrl:
+    Type: String
+    Default: https://example.com
+    Description: Public HTTPS URL of the deployed app, without trailing slash.
+  InitialUserEmail:
+    Type: String
+    Default: admin@example.com
+    Description: Email address for the initial Cognito admin user.
+  InitialUserTemporaryPassword:
+    Type: String
+    NoEcho: true
+    MinLength: 12
+    Description: Temporary password for the initial Cognito user.
+  IncidentTableName:
+    Type: String
+    Default: incident-management
+    Description: DynamoDB table name for ITIL-aligned incident management records
+  IncidentTableBillingMode:
+    Type: String
+    Default: PAY_PER_REQUEST
+    AllowedValues:
+      - PAY_PER_REQUEST
+      - PROVISIONED
+    Description: DynamoDB billing mode for the incident table
+  IncidentTablePointInTimeRecovery:
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: Enable PITR for incident records
+
+Conditions:
+  UseProvisionedBilling: !Equals [!Ref IncidentTableBillingMode, PROVISIONED]
+  EnableIncidentTablePitr: !Equals [!Ref IncidentTablePointInTimeRecovery, 'true']
 
 Resources:
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Ref CognitoUserPoolName
+      AutoVerifiedAttributes:
+        - email
+      UsernameAttributes:
+        - email
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Mutable: true
+          Required: true
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 12
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+          RequireUppercase: true
+          TemporaryPasswordValidityDays: 7
+
+  CognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: livecenter-simple-web
+      UserPoolId: !Ref CognitoUserPool
+      GenerateSecret: true
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthScopes:
+        - email
+        - openid
+        - profile
+      SupportedIdentityProviders:
+        - COGNITO
+      PreventUserExistenceErrors: ENABLED
+      CallbackURLs:
+        - !Sub '${AppBaseUrl}/api/auth/callback'
+      LogoutURLs:
+        - !Sub '${AppBaseUrl}/'
+
+  CognitoDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Ref CognitoDomainPrefix
+      UserPoolId: !Ref CognitoUserPool
+
+  CognitoInitialUser:
+    Type: AWS::Cognito::UserPoolUser
+    Properties:
+      UserPoolId: !Ref CognitoUserPool
+      Username: !Ref InitialUserEmail
+      DesiredDeliveryMediums:
+        - EMAIL
+      ForceAliasCreation: false
+      UserAttributes:
+        - Name: email
+          Value: !Ref InitialUserEmail
+        - Name: email_verified
+          Value: 'true'
+      TemporaryPassword: !Ref InitialUserTemporaryPassword
+
   AmplifyApp:
     Type: AWS::Amplify::App
     Properties:
@@ -79,6 +187,20 @@ Resources:
           Value: !Ref ModelId
         - Name: SYSTEM_PROMPT
           Value: !Ref SystemPrompt
+        - Name: COGNITO_REGION
+          Value: !Ref AWS::Region
+        - Name: COGNITO_USER_POOL_ID
+          Value: !Ref CognitoUserPool
+        - Name: COGNITO_CLIENT_ID
+          Value: !Ref CognitoUserPoolClient
+        - Name: COGNITO_CLIENT_SECRET
+          Value: !GetAtt CognitoUserPoolClient.ClientSecret
+        - Name: COGNITO_DOMAIN
+          Value: !Sub 'https://${CognitoDomainPrefix}.auth.${AWS::Region}.amazoncognito.com'
+        - Name: OAUTH_REDIRECT_URI
+          Value: !Sub '${AppBaseUrl}/api/auth/callback'
+        - Name: OAUTH_LOGOUT_URI
+          Value: !Sub '${AppBaseUrl}/'
 
   MainBranch:
     Type: AWS::Amplify::Branch
@@ -88,8 +210,102 @@ Resources:
       EnableAutoBuild: true
       Stage: PRODUCTION
 
+  IncidentManagementTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Ref IncidentTableName
+      BillingMode: !Ref IncidentTableBillingMode
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: GSI1PK
+          AttributeType: S
+        - AttributeName: GSI1SK
+          AttributeType: S
+        - AttributeName: GSI2PK
+          AttributeType: S
+        - AttributeName: GSI2SK
+          AttributeType: S
+        - AttributeName: GSI3PK
+          AttributeType: S
+        - AttributeName: GSI3SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: GSI1
+          KeySchema:
+            - AttributeName: GSI1PK
+              KeyType: HASH
+            - AttributeName: GSI1SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: GSI2
+          KeySchema:
+            - AttributeName: GSI2PK
+              KeyType: HASH
+            - AttributeName: GSI2SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: GSI3
+          KeySchema:
+            - AttributeName: GSI3PK
+              KeyType: HASH
+            - AttributeName: GSI3SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: !If [EnableIncidentTablePitr, true, false]
+      SSESpecification:
+        SSEEnabled: true
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      Tags:
+        - Key: Domain
+          Value: incident-management
+        - Key: ProcessFramework
+          Value: ITIL
+        - Key: DataModel
+          Value: single-table
+        - Key: ContainsOperationalRecords
+          Value: 'true'
+      ProvisionedThroughput: !If
+        - UseProvisionedBilling
+        - ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+        - !Ref AWS::NoValue
+
 Outputs:
   AmplifyAppId:
     Value: !GetAtt AmplifyApp.AppId
   DefaultDomain:
     Value: !GetAtt AmplifyApp.DefaultDomain
+  CognitoUserPoolId:
+    Value: !Ref CognitoUserPool
+  CognitoUserPoolClientId:
+    Value: !Ref CognitoUserPoolClient
+  CognitoDomain:
+    Value: !Sub 'https://${CognitoDomainPrefix}.auth.${AWS::Region}.amazoncognito.com'
+  InitialLoginUsername:
+    Value: !Ref InitialUserEmail
+  IncidentTableName:
+    Value: !Ref IncidentManagementTable
+  IncidentTableArn:
+    Value: !GetAtt IncidentManagementTable.Arn
+  IncidentTableStreamArn:
+    Value: !GetAtt IncidentManagementTable.StreamArn
+  IncidentTableNotes:
+    Value: ITIL-aligned single-table design using PK/SK with GSIs for incident status, urgency/impact/severity, assignment, and service lookups.

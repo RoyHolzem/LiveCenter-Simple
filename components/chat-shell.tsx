@@ -1,14 +1,17 @@
 'use client';
 
-import { FormEvent, useMemo, useRef, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import styles from './chat-shell.module.css';
-import type { ChatMessage, PresenceState } from '@/lib/types';
+import type { ActivityEvent, ChatMessage, PresenceState } from '@/lib/types';
+import { demoIncidents } from '@/lib/demo-incidents';
 import { makeId } from '@/lib/utils';
 
 type Props = {
   appName: string;
   assistantName: string;
 };
+
+type RobotMode = 'idle' | 'listening' | 'speaking';
 
 const nowIso = () => new Date().toISOString();
 
@@ -17,7 +20,7 @@ export function ChatShell({ appName, assistantName }: Props) {
     {
       id: makeId(),
       role: 'assistant',
-      content: `Hey — ${assistantName} here. Drop a message and I’ll answer through the OpenClaw gateway.`,
+      content: `Xena online. Secure relay active. You can speak now.`,
       createdAt: nowIso()
     }
   ]);
@@ -25,14 +28,76 @@ export function ChatShell({ appName, assistantName }: Props) {
   const [presence, setPresence] = useState<PresenceState>('idle');
   const [statusText, setStatusText] = useState(`${assistantName} is idle`);
   const [error, setError] = useState<string | null>(null);
+  const [pointer, setPointer] = useState({ x: 0, y: 0 });
+  const [isFocused, setIsFocused] = useState(false);
+  const [activity, setActivity] = useState<ActivityEvent[]>([]);
+  const [activityError, setActivityError] = useState<string | null>(null);
+  const [activityLoading, setActivityLoading] = useState(true);
   const assistantBufferRef = useRef('');
+
+  useEffect(() => {
+    const onMove = (event: MouseEvent) => {
+      const x = (event.clientX / window.innerWidth - 0.5) * 2;
+      const y = (event.clientY / window.innerHeight - 0.5) * 2;
+      setPointer({ x, y });
+    };
+
+    window.addEventListener('mousemove', onMove);
+    return () => window.removeEventListener('mousemove', onMove);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadActivity = async () => {
+      try {
+        setActivityLoading(true);
+        const response = await fetch('/api/activity?limit=8', { cache: 'no-store' });
+        const payload = (await response.json()) as { ok: boolean; events?: ActivityEvent[]; error?: string };
+
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.error || 'Failed to load activity');
+        }
+
+        if (!active) return;
+        setActivity(payload.events || []);
+        setActivityError(null);
+      } catch (err) {
+        if (!active) return;
+        setActivityError(err instanceof Error ? err.message : 'Failed to load activity');
+      } finally {
+        if (active) setActivityLoading(false);
+      }
+    };
+
+    void loadActivity();
+    const interval = window.setInterval(loadActivity, 30000);
+
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  const robotMode: RobotMode = useMemo(() => {
+    if (presence === 'typing') return 'speaking';
+    if (presence === 'processing' || isFocused) return 'listening';
+    return 'idle';
+  }, [presence, isFocused]);
 
   const label = useMemo(() => {
     if (presence === 'processing') return `${assistantName} is processing`;
-    if (presence === 'typing') return `${assistantName} is typing`;
+    if (presence === 'typing') return `${assistantName} is speaking`;
     if (presence === 'error') return 'Connection issue';
     return `${assistantName} is idle`;
   }, [assistantName, presence]);
+
+  const robotStyle = {
+    '--look-x': `${pointer.x * 18}px`,
+    '--look-y': `${pointer.y * 14}px`,
+    '--tilt-x': `${pointer.y * -9}deg`,
+    '--tilt-y': `${pointer.x * 12}deg`
+  } as React.CSSProperties;
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -61,8 +126,19 @@ export function ChatShell({ appName, assistantName }: Props) {
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [...messages, userMessage] })
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'openclaw',
+          stream: true,
+          messages: [
+            ...messages
+              .filter((message) => message.role === 'user' || message.role === 'assistant')
+              .map((message) => ({ role: message.role, content: message.content })),
+            { role: 'user', content }
+          ]
+        })
       });
 
       if (!response.ok || !response.body) {
@@ -78,43 +154,35 @@ export function ChatShell({ appName, assistantName }: Props) {
         const { done, value } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
+        const chunks = buffer.split('\n\n');
+        buffer = chunks.pop() || '';
 
-        for (const line of lines) {
-          if (!line.startsWith('data:')) continue;
+        for (const chunk of chunks) {
+          const line = chunk.split('\n').find((entry) => entry.startsWith('data:'));
+          if (!line) continue;
           const raw = line.slice(5).trim();
-          if (!raw || raw === '[DONE]') continue;
-          const payload = JSON.parse(raw) as
-            | { type: 'status'; status: PresenceState; label: string }
-            | { type: 'delta'; content: string }
-            | { type: 'done' }
-            | { type: 'error'; error: string };
-
-          if (payload.type === 'status') {
-            setPresence(payload.status);
-            setStatusText(payload.label);
+          if (!raw) continue;
+          if (raw === '[DONE]') {
+            setPresence('idle');
+            setStatusText(`${assistantName} is idle`);
+            continue;
           }
 
-          if (payload.type === 'delta') {
+          const json = JSON.parse(raw) as {
+            choices?: Array<{ delta?: { content?: string }; message?: { content?: string } }>;
+          };
+
+          const delta = json.choices?.[0]?.delta?.content ?? json.choices?.[0]?.message?.content;
+          if (delta) {
             setPresence('typing');
-            setStatusText(`${assistantName} is typing`);
-            assistantBufferRef.current += payload.content;
+            setStatusText(`${assistantName} is speaking`);
+            assistantBufferRef.current += delta;
             const text = assistantBufferRef.current;
             setMessages((current) =>
               current.map((message) =>
                 message.id === assistantMessageId ? { ...message, content: text } : message
               )
             );
-          }
-
-          if (payload.type === 'error') {
-            throw new Error(payload.error);
-          }
-
-          if (payload.type === 'done') {
-            setPresence('idle');
-            setStatusText(`${assistantName} is idle`);
           }
         }
       }
@@ -135,45 +203,100 @@ export function ChatShell({ appName, assistantName }: Props) {
 
   return (
     <div className={styles.shell}>
-      <div className={styles.frame}>
-        <aside className={styles.sidebar}>
-          <div className={styles.brand}>
-            <div className={styles.eyebrow}>OpenClaw Gateway UI</div>
-            <div className={styles.title}>{appName}</div>
-            <div className={styles.copy}>
-              A custom standalone chat surface for Xena — not the dashboard. Dark glass, cyan glow, matrix energy.
-            </div>
-          </div>
+      <div className={styles.noise} />
+      <div className={styles.grid} />
+      <div className={styles.particles} />
+      <div className={styles.codeRain} />
 
-          <div className={styles.card}>
-            <div className={styles.statusRow}>
-              <div>
-                <div className={styles.eyebrow}>Presence</div>
-                <div style={{ marginTop: 8, fontWeight: 600 }}>{statusText}</div>
+      <main className={styles.frame}>
+        <section className={styles.hero}>
+          <div className={styles.leftPane}>
+            <div className={styles.signalBar}>
+              <span />
+              <span />
+              <span />
+            </div>
+            <div className={styles.eyebrow}>Experimental branch · pass 1 · elite blue matrix system</div>
+            <h1 className={styles.heroTitle}>{appName}</h1>
+            <p className={styles.heroText}>
+              A cinematic AI surface built around a living machine presence — deep electric blues, black glass, and a control deck anchored to a real OpenClaw gateway.
+            </p>
+            <div className={styles.heroStats}>
+              <div className={styles.statPanel}>
+                <div className={styles.statLabel}>Presence</div>
+                <div className={styles.statValue}>{robotMode}</div>
               </div>
-              <div className={styles.statusBadge}>
-                <span className={`${styles.dot} ${styles[presence] || ''}`} />
-                {label.replace(`${assistantName} is `, '')}
+              <div className={styles.statPanel}>
+                <div className={styles.statLabel}>Voice channel</div>
+                <div className={styles.statValue}>{label.replace(`${assistantName} is `, '')}</div>
+              </div>
+              <div className={styles.statPanel}>
+                <div className={styles.statLabel}>Path</div>
+                <div className={styles.statValue}>browser → app → gateway</div>
               </div>
             </div>
           </div>
 
-          <div className={styles.card}>
-            <div className={styles.eyebrow}>Deploy model</div>
-            <div className={styles.metaList}>
-              <div>• Next.js app router</div>
-              <div>• Amplify Hosting via amplify.yml</div>
-              <div>• Gateway token stays server-side</div>
-              <div>• SSE status + streamed output</div>
+          <div className={styles.centerStage}>
+            <div className={styles.orbitOne} />
+            <div className={styles.orbitTwo} />
+            <div className={styles.hudPanelTop}>
+              <span className={styles.hudLabel}>Neural status</span>
+              <strong>{statusText}</strong>
+            </div>
+            <div className={styles.hudPanelBottom}>
+              <span className={styles.hudLabel}>Operator link</span>
+              <strong>secure relay mode</strong>
+            </div>
+
+            <div className={styles.robotStage} style={robotStyle}>
+              <div className={styles.halo} />
+              <div className={`${styles.robot} ${styles[robotMode]}`}>
+                <div className={styles.robotAura} />
+                <div className={styles.robotHead}>
+                  <div className={styles.cranium} />
+                  <div className={styles.facePlate}>
+                    <div className={styles.faceSeam} />
+                    <div className={styles.eyeCluster}>
+                      <span className={styles.eye} />
+                      <span className={styles.eyeCore} />
+                    </div>
+                    <div className={styles.voicePanel}>
+                      <span />
+                      <span />
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+                  </div>
+                  <div className={styles.templeLeft} />
+                  <div className={styles.templeRight} />
+                </div>
+                <div className={styles.neck}>
+                  <span />
+                  <span />
+                  <span />
+                </div>
+                <div className={styles.torso}>
+                  <div className={styles.collar} />
+                  <div className={styles.core}>
+                    <div className={styles.coreRing} />
+                    <div className={styles.corePulse} />
+                  </div>
+                  <div className={styles.shoulderLeft} />
+                  <div className={styles.shoulderRight} />
+                </div>
+              </div>
+              <div className={styles.stageReflection} />
             </div>
           </div>
-        </aside>
+        </section>
 
-        <section className={styles.main}>
-          <div className={styles.topbar}>
+        <section className={styles.commandDeck}>
+          <div className={styles.deckHeader}>
             <div>
               <div className={styles.topTitle}>{assistantName}</div>
-              <div className={styles.topSub}>Connected through OpenClaw Gateway</div>
+              <div className={styles.topSub}>Immersive control deck · authenticated relay · premium experimental shell</div>
             </div>
             <div className={styles.statusBadge}>
               <span className={`${styles.dot} ${styles[presence] || ''}`} />
@@ -181,42 +304,106 @@ export function ChatShell({ appName, assistantName }: Props) {
             </div>
           </div>
 
-          <div className={styles.messages}>
-            {messages.map((message) => (
-              <article
-                key={message.id}
-                className={`${styles.message} ${message.role === 'user' ? styles.user : styles.assistant}`}
-              >
-                <div className={styles.messageMeta}>{message.role === 'user' ? 'You' : assistantName}</div>
-                {message.content || (
-                  <div className={styles.typing}>
-                    <span />
-                    <span />
-                    <span />
-                  </div>
-                )}
-              </article>
-            ))}
-          </div>
-
-          <div className={styles.composer}>
-            <form className={styles.form} onSubmit={onSubmit}>
-              <textarea
-                className={styles.input}
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
-                placeholder={`Message ${assistantName}...`}
-              />
-              <div className={styles.actions}>
-                <div className={styles.helper}>{error ? `Last error: ${error}` : 'Streaming responses enabled.'}</div>
-                <button className={styles.button} type="submit" disabled={!draft.trim() || presence === 'processing' || presence === 'typing'}>
-                  Send message
-                </button>
+          <div className={styles.deckBody}>
+            <div className={styles.deckSide}>
+              <div className={styles.sidePanel}>
+                <div className={styles.sidePanelLabel}>Machine</div>
+                <div className={styles.sidePanelValue}>{robotMode}</div>
+                <p className={styles.sidePanelCopy}>Passive posture in silence. Focus shift during input. Active voice lattice during response generation.</p>
               </div>
-            </form>
+              <div className={styles.sidePanel}>
+                <div className={styles.sidePanelLabel}>Signal</div>
+                <div className={styles.sidePanelValue}>stable</div>
+                <p className={styles.sidePanelCopy}>Chat runs through a server-side relay. Activity is also loaded server-side from CloudTrail so raw credentials stay off the browser.</p>
+              </div>
+              <div className={styles.sidePanel}>
+                <div className={styles.sidePanelLabel}>Incident queue</div>
+                <div className={styles.sidePanelValue}>{demoIncidents.length} seeded</div>
+                <p className={styles.sidePanelCopy}>Dummy ITIL-style incidents with random companies, IDs, priorities, and services so the screen is not blank.</p>
+
+                <div className={styles.activityFeed}>
+                  {demoIncidents.map((incident) => (
+                    <article key={incident.incidentId} className={styles.activityItem}>
+                      <div className={styles.activityTopRow}>
+                        <span className={styles.activityAction}>{incident.incidentId}</span>
+                        <time className={styles.activityTime}>{incident.priority} · {incident.severity}</time>
+                      </div>
+                      <div className={styles.activityMeta}>{incident.companyName}</div>
+                      <div className={styles.activityMeta}>{incident.service} · {incident.status}</div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+
+              <div className={`${styles.sidePanel} ${styles.activityPanel}`}>
+                <div className={styles.sidePanelLabel}>AWS activity</div>
+                <div className={styles.sidePanelValue}>CloudTrail</div>
+                <p className={styles.sidePanelCopy}>Recent management events filtered for the Xena session naming pattern.</p>
+
+                <div className={styles.activityFeed}>
+                  {activityLoading ? (
+                    <div className={styles.activityState}>Loading activity...</div>
+                  ) : activityError ? (
+                    <div className={styles.activityState}>Activity unavailable: {activityError}</div>
+                  ) : activity.length === 0 ? (
+                    <div className={styles.activityState}>No matching AWS activity yet.</div>
+                  ) : (
+                    activity.map((event) => (
+                      <article key={event.eventId} className={styles.activityItem}>
+                        <div className={styles.activityTopRow}>
+                          <span className={styles.activityAction}>{event.eventName}</span>
+                          <time className={styles.activityTime}>{new Date(event.eventTime).toLocaleString()}</time>
+                        </div>
+                        <div className={styles.activityMeta}>{event.eventSource}</div>
+                        <div className={styles.activityMeta}>{event.resource || event.actor}</div>
+                      </article>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.chatColumn}>
+              <div className={styles.messages}>
+                {messages.map((message) => (
+                  <article
+                    key={message.id}
+                    className={`${styles.message} ${message.role === 'user' ? styles.user : styles.assistant}`}
+                  >
+                    <div className={styles.messageMeta}>{message.role === 'user' ? 'Operator' : assistantName}</div>
+                    {message.content || (
+                      <div className={styles.typing}>
+                        <span />
+                        <span />
+                        <span />
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </div>
+
+              <div className={styles.composerWrap}>
+                <form className={styles.form} onSubmit={onSubmit}>
+                  <textarea
+                    className={styles.input}
+                    value={draft}
+                    onChange={(event) => setDraft(event.target.value)}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                    placeholder={`Transmit to ${assistantName}...`}
+                  />
+                  <div className={styles.actions}>
+                    <div className={styles.helper}>{error ? `Last error: ${error}` : 'Secure browser → app → gateway relay'}</div>
+                    <button className={styles.button} type="submit" disabled={!draft.trim() || presence === 'processing' || presence === 'typing'}>
+                      Transmit
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
           </div>
         </section>
-      </div>
+      </main>
     </div>
   );
 }

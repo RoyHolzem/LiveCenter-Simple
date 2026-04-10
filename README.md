@@ -1,49 +1,69 @@
 # LiveCenter Simple
 
-A production-ready **standalone chat UI** for **Xena** that talks to an **OpenClaw Gateway**. This is **not** the OpenClaw dashboard — it is a custom Next.js frontend with a matrix-blue dark theme, streaming replies, and a real-time presence indicator (`idle`, `processing`, `typing`).
+A production-ready **standalone chat UI** for **Xena** that talks to an **OpenClaw Gateway** through a **server-side Next.js relay** and is protected by **Amazon Cognito Hosted UI / OAuth** before any live content loads.
+
+This is **not** the OpenClaw dashboard — it is a custom Next.js frontend with a matrix-blue dark theme, streaming replies, a real-time presence indicator, and an AWS activity panel.
+
+## Security model
+
+- Browser users do **not** receive the OpenClaw gateway bearer token
+- Browser users do **not** receive AWS access keys for activity lookups
+- Authentication happens **before** the main UI is shown
+- Cognito Hosted UI handles user sign-in
+- The app uses the **OAuth authorization code flow** with a server-side callback
+- The app stores only a **secure HTTP-only session cookie** after successful sign-in
+- Chat requests flow through the app server, which injects the gateway auth token server-side
+- CloudTrail activity is read server-side only
+
+This follows AWS best practice direction for separating public clients from secrets, delegating identity to Cognito, and keeping operational credentials server-side.
 
 ## Features
 
-- **Pure IaC deployment** for Amplify Hosting via `amplify.yml`
+- **Pure IaC deployment** for Amplify Hosting via CloudFormation
+- **Amazon Cognito Hosted UI / OAuth** provisioned by IaC
 - **Custom standalone chat UI** built with Next.js App Router
 - **Server-side gateway proxy** so the OpenClaw auth token never reaches the browser
 - **SSE streaming** from `POST /v1/chat/completions`
-- **Real-time activity indicator**
-- **Deployable by anyone** with environment variables + CloudFormation template
-
----
+- **Real AWS activity panel** backed by CloudTrail lookup
+- **DynamoDB incident-management table** aligned to ITIL-style incident operations
 
 ## Architecture
 
 ```text
 Browser
-  -> Next.js frontend on Amplify Hosting
+  -> Cognito Hosted UI (OAuth authorization code flow)
+  -> /api/auth/callback on Next.js server
+  -> secure HTTP-only app session cookie
+  -> main UI
   -> /api/chat route (server-side proxy)
   -> OpenClaw Gateway HTTP API
-     POST /v1/chat/completions
+
+Browser
+  -> /api/activity
+  -> CloudTrail lookup via server-side AWS SDK
 ```
-
-The frontend never calls the gateway directly with a secret. The Next.js server route adds the gateway bearer token and streams the response back to the browser.
-
----
 
 ## Required environment variables
 
-Copy `.env.example` to `.env.local` for local development, or configure the same variables in **AWS Amplify Hosting**.
+These should be configured in **AWS Amplify Hosting**. Keep secrets server-side only.
 
 | Variable | Required | Description |
 |---|---:|---|
-| `OPENCLAW_GATEWAY_URL` | yes | Public HTTPS base URL for your OpenClaw Gateway, e.g. `https://18.194.41.114` or your reverse-proxied domain |
+| `OPENCLAW_GATEWAY_URL` | yes | Public HTTPS base URL for your OpenClaw Gateway |
 | `OPENCLAW_GATEWAY_AUTH_TOKEN` | yes | Gateway bearer token |
 | `OPENCLAW_GATEWAY_CHAT_PATH` | no | Defaults to `/v1/chat/completions` |
-| `OPENCLAW_MODEL` | no | Defaults to `openai/gpt-5.4` |
-| `SYSTEM_PROMPT` | no | Server-side persona prompt |
+| `OPENCLAW_MODEL` | no | Defaults to `openclaw` |
+| `COGNITO_REGION` | yes | AWS region for Cognito |
+| `COGNITO_USER_POOL_ID` | yes | Cognito user pool ID |
+| `COGNITO_CLIENT_ID` | yes | Cognito app client ID |
+| `COGNITO_CLIENT_SECRET` | no | Cognito app client secret when using a confidential client |
+| `COGNITO_DOMAIN` | yes | Full Cognito Hosted UI domain, e.g. `https://name.auth.eu-central-1.amazoncognito.com` |
+| `OAUTH_REDIRECT_URI` | yes | Callback URI, e.g. `https://app.example.com/api/auth/callback` |
+| `OAUTH_LOGOUT_URI` | yes | Post-logout redirect URI |
 | `NEXT_PUBLIC_APP_NAME` | no | UI title |
 | `NEXT_PUBLIC_ASSISTANT_NAME` | no | Display name in the chat UI |
 
-> Important: `OPENCLAW_GATEWAY_URL` must be **publicly reachable from Amplify**. `http://127.0.0.1:18789` only works locally on the gateway host.
-
----
+> Do **not** use `NEXT_PUBLIC_*` for secrets. If a value should not be visible to anyone opening devtools, it must stay server-side.
 
 ## Local development
 
@@ -53,15 +73,17 @@ cp .env.example .env.local
 npm run dev
 ```
 
----
+For local development, point Cognito callback/logout URLs at your local origin if you want the full hosted OAuth flow to work locally.
 
 ## One-click deploy with CloudFormation
 
-Use the template in [`infra/amplify-app.template.yaml`](./infra/amplify-app.template.yaml) to provision:
+Use [`infra/amplify-app.template.yaml`](./infra/amplify-app.template.yaml) to provision:
 
 - an Amplify app
 - a production branch
-- the required environment variables
+- Amazon Cognito user pool + hosted OAuth client
+- the required app environment variables
+- a DynamoDB incident-management table aligned to ITIL-style incident operations
 
 ### Deploy from the AWS Console
 
@@ -69,20 +91,15 @@ Use the template in [`infra/amplify-app.template.yaml`](./infra/amplify-app.temp
 2. Create stack with `infra/amplify-app.template.yaml`
 3. Fill in the parameters:
    - GitHub repository URL
-   - Amplify OAuth token / GitHub token secret reference
+   - Amplify access token
    - OpenClaw gateway public URL
    - OpenClaw gateway auth token
+   - app base URL
+   - Cognito domain prefix
+   - initial Cognito admin email/temporary password
+   - incident table settings if needed
 4. Deploy
-
-### Quick-create URL pattern
-
-Replace the URL below with your raw GitHub file URL once pushed:
-
-```text
-https://console.aws.amazon.com/cloudformation/home?region=eu-central-1#/stacks/quickcreate?templateURL=<RAW_TEMPLATE_URL>&stackName=livecenter-simple
-```
-
----
+5. Sign in through Cognito Hosted UI before accessing the main UI
 
 ## OpenClaw gateway requirements
 
@@ -91,21 +108,6 @@ This app expects the gateway HTTP API to expose:
 - `POST /v1/chat/completions`
 
 OpenClaw docs: `docs/gateway/openai-http-api.md`
-
-### Example request
-
-```json
-{
-  "model": "openai/gpt-5.4",
-  "stream": true,
-  "messages": [
-    {"role": "system", "content": "You are Xena..."},
-    {"role": "user", "content": "Hey Xena"}
-  ]
-}
-```
-
----
 
 ## Public gateway note
 
@@ -117,19 +119,33 @@ If your gateway is currently bound to loopback (`127.0.0.1`) you must expose it 
 
 Do **not** expose the raw gateway to the public internet without understanding the auth/security model. The bearer token is effectively operator access.
 
----
+## Cheap AWS activity log via CloudTrail
 
-## Styling
+This repo includes:
 
-The UI uses a dark matrix-inspired palette with cyan/blue neon accents:
+- `app/api/activity/route.ts`
+  - server-side CloudTrail lookup endpoint
+- `infra/terraform/`
+  - Terraform for dedicated Xena operator and activity-reader roles
+- an activity panel in the UI sidebar
 
-- deep black-blue background
-- cyan glow borders
-- glass panels
-- animated typing state
-- explicit status badges for `idle`, `processing`, `typing`, `error`
+## Terraform
 
----
+See [`infra/terraform/README.md`](./infra/terraform/README.md).
+
+This Terraform intentionally keeps the activity system cheap and simple.
+
+## Immediate post-hardening cleanup
+
+If you previously deployed an older direct-browser version:
+
+1. rotate the exposed gateway token
+2. rotate any exposed AWS access keypair
+3. remove obsolete Amplify vars such as:
+   - `NEXT_PUBLIC_GATEWAY_AUTH_TOKEN`
+   - `NEXT_PUBLIC_CT_AWS_ACCESS_KEY_ID`
+   - `NEXT_PUBLIC_CT_AWS_SECRET_ACCESS_KEY`
+4. redeploy with the new server-side env model and Cognito OAuth settings
 
 ## License
 
