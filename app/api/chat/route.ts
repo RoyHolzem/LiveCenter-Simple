@@ -6,7 +6,7 @@ import {
 
 const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || '';
 const CHAT_PATH = process.env.NEXT_PUBLIC_GATEWAY_CHAT_PATH || '/v1/chat/completions';
-const SECRET_NAME = process.env.GATEWAY_TOKEN_SECRET_NAME || '';
+const SECRET_NAME = process.env.NEXT_PUBLIC_GATEWAY_TOKEN_SECRET_NAME || '';
 const REGION = process.env.NEXT_PUBLIC_COGNITO_REGION || 'eu-central-1';
 
 const secretsClient = new SecretsManagerClient({ region: REGION });
