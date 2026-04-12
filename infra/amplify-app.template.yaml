@@ -1,11 +1,11 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   Xena - AI Assistant Interface.
-  Provisions Cognito User Pool + Amplify Hosting.
+  Provisions Cognito User Pool + SES Email + Amplify Hosting.
   Fully redeployable on any AWS account.
 
 Parameters:
-  # ── Repository ──
+  # == Repository ==
   RepositoryUrl:
     Type: String
     Default: https://github.com/RoyHolzem/Xena
@@ -15,7 +15,7 @@ Parameters:
     NoEcho: true
     Description: GitHub personal access token for Amplify
 
-  # ── Cognito ──
+  # == Cognito ==
   CognitoDomainPrefix:
     Type: String
     Description: >
@@ -23,7 +23,17 @@ Parameters:
       Must be unique across all AWS accounts. Lowercase, hyphens only.
     AllowedPattern: '^[a-z][a-z0-9-]{3,62}$'
 
-  # ── Google OAuth (optional) ──
+  # == SES Email ==
+  SenderEmail:
+    Type: String
+    Description: >
+      Verified SES sender email address for Cognito verification emails.
+      Must be verified in SES before deploying (or verify after deploy
+      via the email AWS sends). In SES sandbox mode, this email must
+      be verified before Cognito can send through it.
+    AllowedPattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+
+  # == Google OAuth (optional) ==
   GoogleClientId:
     Type: String
     NoEcho: true
@@ -35,7 +45,7 @@ Parameters:
     Default: ''
     Description: Google OAuth Client Secret (leave empty to disable)
 
-  # ── Amplify domain (for callback URLs) ──
+  # == Amplify domain (for callback URLs) ==
   AmplifyAppDomain:
     Type: String
     Default: ''
@@ -44,7 +54,7 @@ Parameters:
       Leave empty on first deploy, then update the stack with
       the AmplifyAppId output to populate callback URLs.
 
-  # ── Gateway ──
+  # == Gateway ==
   GatewayUrl:
     Type: String
     Description: OpenClaw gateway public HTTPS URL
@@ -56,7 +66,7 @@ Parameters:
     Type: String
     Default: /v1/chat/completions
 
-  # ── CloudTrail (optional) ──
+  # == CloudTrail (optional) ==
   CloudTrailAccessKeyId:
     Type: String
     NoEcho: true
@@ -69,7 +79,7 @@ Parameters:
     Type: String
     Default: eu-central-1
 
-  # ── App branding ──
+  # == App branding ==
   AppDisplayName:
     Type: String
     Default: Xena
@@ -87,12 +97,46 @@ Conditions:
     - !Not [!Equals [!Ref CloudTrailSecretAccessKey, '']]
 
 Resources:
-  # ══════════════════════════════════════════
+  # ===========================================
+  #  SES EMAIL IDENTITY
+  # ===========================================
+
+  SenderEmailIdentity:
+    Type: AWS::SES::EmailIdentity
+    Properties:
+      EmailIdentity: !Ref SenderEmail
+
+  # ===========================================
   #  COGNITO
-  # ══════════════════════════════════════════
+  # ===========================================
+
+  # IAM role allowing Cognito to send via SES
+  CognitoSesSendingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${AWS::StackName}-cognito-ses-sender'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cognito-idp.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: SesSendAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: 'ses:SendEmail'
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    'ses:FromAddress': !Ref SenderEmail
 
   UserPool:
     Type: AWS::Cognito::UserPool
+    DependsOn: SenderEmailIdentity
     Properties:
       UserPoolName: !Sub '${AWS::StackName}-users'
       AutoVerifiedAttributes: [email]
@@ -113,10 +157,17 @@ Resources:
           Mutable: true
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: false
+      EmailConfiguration:
+        EmailSendingAccount: DEVELOPER
+        SourceArn: !Sub 'arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/${SenderEmail}'
+        From: !Sub '${AppDisplayName} <${SenderEmail}>'
+        ReplyToEmailAddress: !Ref SenderEmail
       EmailVerificationSubject: !Sub '${AppDisplayName} - Verify your email'
       EmailVerificationMessage: >
         Welcome to ${AppDisplayName}.
         Your verification code is {####}.
+      UserPoolAddOns:
+        AdvancedSecurityMode: ENFORCED
 
   UserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
@@ -191,9 +242,9 @@ Resources:
         IdToken: hours
         RefreshToken: days
 
-  # ══════════════════════════════════════════
+  # ===========================================
   #  AMPLIFY
-  # ══════════════════════════════════════════
+  # ===========================================
 
   AmplifyApp:
     Type: AWS::Amplify::App
@@ -221,7 +272,7 @@ Resources:
               - node_modules/**/*
               - .next/cache/**/*
       EnvironmentVariables:
-        # ── Client-side (NEXT_PUBLIC_) ──
+        # == Client-side (NEXT_PUBLIC_) ==
         - Name: NEXT_PUBLIC_APP_NAME
           Value: !Ref AppDisplayName
         - Name: NEXT_PUBLIC_ASSISTANT_NAME
@@ -236,7 +287,7 @@ Resources:
           Value: !Ref GatewayUrl
         - Name: NEXT_PUBLIC_GATEWAY_CHAT_PATH
           Value: !Ref GatewayChatPath
-        # ── Server-side (no NEXT_PUBLIC_ prefix) ──
+        # == Server-side (no NEXT_PUBLIC_ prefix) ==
         - Name: GATEWAY_AUTH_TOKEN
           Value: !Ref GatewayAuthToken
         - Name: CT_AWS_ACCESS_KEY_ID
@@ -280,6 +331,9 @@ Outputs:
   CognitoDomain:
     Description: Cognito hosted-ui domain
     Value: !Sub '${CognitoDomainPrefix}.auth.${AWS::Region}.amazoncognito.com'
+  SenderEmailIdentityArn:
+    Description: SES email identity ARN
+    Value: !Ref SenderEmailIdentity
   AmplifyAppId:
     Description: Amplify Application ID
     Value: !GetAtt AmplifyApp.AppId
