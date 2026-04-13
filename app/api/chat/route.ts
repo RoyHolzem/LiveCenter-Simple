@@ -8,7 +8,6 @@ const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || '';
 const CHAT_PATH = process.env.NEXT_PUBLIC_GATEWAY_CHAT_PATH || '/v1/chat/completions';
 const SECRET_NAME = process.env.NEXT_PUBLIC_GATEWAY_TOKEN_SECRET_NAME || '';
 const REGION = process.env.NEXT_PUBLIC_COGNITO_REGION || 'eu-central-1';
-const FALLBACK_TOKEN = process.env.NEXT_PUBLIC_GATEWAY_AUTH_TOKEN || '';
 
 const secretsClient = new SecretsManagerClient({ region: REGION });
 
@@ -20,22 +19,17 @@ async function getGatewayToken(): Promise<string> {
   const now = Date.now();
   if (cachedToken && now - cachedAt < CACHE_TTL) return cachedToken;
 
-  try {
-    const response = await secretsClient.send(
-      new GetSecretValueCommand({ SecretId: SECRET_NAME })
-    );
-    const parsed = JSON.parse(response.SecretString || '{}');
-    const token = parsed.token || '';
-    if (token && token !== 'placeholder') {
-      cachedToken = token;
-      cachedAt = now;
-      return cachedToken;
-    }
-  } catch {
-    // Secrets Manager unavailable, fall through to env var
+  const response = await secretsClient.send(
+    new GetSecretValueCommand({ SecretId: SECRET_NAME })
+  );
+  const parsed = JSON.parse(response.SecretString || '{}');
+  const token = parsed.token || '';
+  if (!token || token === 'placeholder') {
+    throw new Error('Gateway token not configured in Secrets Manager');
   }
-
-  return FALLBACK_TOKEN;
+  cachedToken = token;
+  cachedAt = now;
+  return cachedToken;
 }
 
 export async function POST(request: Request) {
@@ -56,9 +50,13 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Messages required' }, { status: 400 });
   }
 
-  const gatewayToken = await getGatewayToken();
-  if (!gatewayToken) {
-    return Response.json({ error: 'Gateway token not configured.' }, { status: 503 });
+  let gatewayToken: string;
+  try {
+    gatewayToken = await getGatewayToken();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to read gateway token';
+    console.error('[chat]', message);
+    return Response.json({ error: message }, { status: 503 });
   }
 
   const gatewayUrl = `${GATEWAY_URL}${CHAT_PATH}`;
