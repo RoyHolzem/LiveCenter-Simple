@@ -1,3 +1,5 @@
+/* ─── Core chat types ─── */
+
 export type Role = 'user' | 'assistant' | 'system';
 
 export type ChatMessage = {
@@ -8,6 +10,10 @@ export type ChatMessage = {
 };
 
 export type PresenceState = 'idle' | 'processing' | 'typing' | 'error';
+
+export type AvatarState = 'idle' | 'listening' | 'thinking' | 'speaking' | 'error';
+
+/* ─── Telecom types ─── */
 
 export type TelecomView = 'incidents' | 'events' | 'planned-works';
 
@@ -54,4 +60,46 @@ export type TelecomApiResponse = {
   items: TelecomRecord[];
   count: number;
   error?: string;
+};
+
+/* ─── Xena SSE Action Events ─── */
+
+export type XenaActionCategory =
+  | 'lambda' | 'cloudformation' | 'amplify' | 's3' | 'iam'
+  | 'apigateway' | 'dynamodb' | 'ec2' | 'ecs' | 'sns' | 'sqs'
+  | 'cdk' | 'lightsail' | 'cloudfront' | 'route53' | 'cloudwatch'
+  | 'logs' | 'ssm' | 'secretsmanager' | 'kms' | 'cognito'
+  | 'bedrock' | 'sagemaker' | 'general';
+
+export type XenaActionVerb =
+  | 'created' | 'updated' | 'deleted' | 'deployed' | 'invoked'
+  | 'listed' | 'described' | 'configured' | 'scaled' | 'checked'
+  | 'started' | 'stopped' | 'modified' | 'published';
+
+export type XenaActionEvent = {
+  type: 'action';
+  id?: string;
+  verb: XenaActionVerb;
+  category: XenaActionCategory;
+  label: string;
+  resource?: string;
+  region?: string;
+  detail?: string;
+  timestamp?: string;
+};
+
+/* ─── Activity Log ─── */
+
+export type ActionSource = 'xena' | 'cloudtrail';
+
+export type ActionLogEntry = {
+  id: string;
+  timestamp: string;
+  verb: string;
+  category: string;
+  label: string;
+  resource?: string;
+  region?: string;
+  detail?: string;
+  source: ActionSource;
 };
