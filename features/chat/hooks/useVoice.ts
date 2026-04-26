@@ -104,7 +104,6 @@ export function useVoice(opts: UseVoiceOptions = {}) {
         'wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2025-06-20',
         [
           'realtime',
-          'openai-beta.realtime-v1',
           `openai-insecure-api-key.${ephemeralToken}`,
         ]
       );
@@ -228,13 +227,17 @@ export function useVoice(opts: UseVoiceOptions = {}) {
         }
       });
 
-      ws.addEventListener('error', () => {
-        setError('WebSocket connection failed');
+      ws.addEventListener('error', (event) => {
+        console.error('[voice] WebSocket error:', event);
+        setError('WebSocket connection failed — check console for details');
         setState('error');
       });
 
-      ws.addEventListener('close', () => {
-        setState('disconnected');
+      ws.addEventListener('close', (event) => {
+        console.log('[voice] WebSocket closed:', event.code, event.reason);
+        if (stateRef.current !== 'disconnected') {
+          setState('disconnected');
+        }
       });
     } catch (err: any) {
       setError(err.message);
