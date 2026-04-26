@@ -118,6 +118,7 @@ export function useVoice(opts: UseVoiceOptions = {}) {
         ws.send(JSON.stringify({
           type: 'session.update',
           session: {
+            type: 'realtime',
             instructions: 'You are Xena, a sharp and resourceful AI operations assistant. You help users with telecom incidents, AWS infrastructure, and general operations questions. Be concise and direct. You can be opinionated. Don\'t use filler phrases like "Great question!" — just help. You have access to operational context from the Xena dashboard.',
           },
         }));
@@ -195,10 +196,8 @@ export function useVoice(opts: UseVoiceOptions = {}) {
             setState('listening');
             break;
 
-          // User stopped speaking (VAD)
+          // User stopped speaking (VAD) — server auto-commits, no manual action needed
           case 'input_audio_buffer.speech_stopped':
-            // Commit the audio buffer for processing
-            ws.send(JSON.stringify({ type: 'input_audio_buffer.commit' }));
             break;
 
           // Conversation item: user transcript
