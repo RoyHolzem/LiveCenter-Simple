@@ -101,10 +101,9 @@ export function useVoice(opts: UseVoiceOptions = {}) {
 
       // Open WebSocket to OpenAI Realtime API
       const ws = new WebSocket(
-        'wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2025-06-20',
+        'wss://api.openai.com/v1/realtime?model=gpt-realtime',
         [
           'realtime',
-          'openai-beta.realtime-v1',
           `openai-insecure-api-key.${ephemeralToken}`,
         ]
       );
@@ -112,6 +111,14 @@ export function useVoice(opts: UseVoiceOptions = {}) {
       wsRef.current = ws;
 
       ws.addEventListener('open', () => {
+        // Send Xena system instructions
+        ws.send(JSON.stringify({
+          type: 'session.update',
+          session: {
+            instructions: 'You are Xena, a sharp and resourceful AI operations assistant. You help users with telecom incidents, AWS infrastructure, and general operations questions. Be concise and direct. You can be opinionated. Don\'t use filler phrases like "Great question!" — just help. You have access to operational context from the Xena dashboard.',
+          },
+        }));
+
         // Set up microphone
         navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
           micStreamRef.current = stream;
@@ -228,13 +235,17 @@ export function useVoice(opts: UseVoiceOptions = {}) {
         }
       });
 
-      ws.addEventListener('error', () => {
-        setError('WebSocket connection failed');
+      ws.addEventListener('error', (event) => {
+        console.error('[voice] WebSocket error:', event);
+        setError('WebSocket connection failed — check console for details');
         setState('error');
       });
 
-      ws.addEventListener('close', () => {
-        setState('disconnected');
+      ws.addEventListener('close', (event) => {
+        console.log('[voice] WebSocket closed:', event.code, event.reason);
+        if (stateRef.current !== 'disconnected') {
+          setState('disconnected');
+        }
       });
     } catch (err: any) {
       setError(err.message);
