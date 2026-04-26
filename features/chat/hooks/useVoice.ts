@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useAuthToken } from '../auth/AuthWrapper';
+import { useAuthToken } from '../../auth/AuthWrapper';
 
 export type VoiceState = 'disconnected' | 'connecting' | 'connected' | 'listening' | 'speaking' | 'error';
 
