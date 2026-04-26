@@ -95,8 +95,8 @@ export function useVoice(opts: UseVoiceOptions = {}) {
       }
 
       const sessionData = await sessionRes.json();
-      const ephemeralToken = sessionData.client_secret?.value;
-      sessionIdRef.current = sessionData.id;
+      const ephemeralToken = sessionData.value || sessionData.client_secret?.value;
+      sessionIdRef.current = sessionData.session?.id || sessionData.id;
       if (!ephemeralToken) throw new Error('No session token received');
 
       // Open WebSocket to OpenAI Realtime API
