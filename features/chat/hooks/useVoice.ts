@@ -57,11 +57,15 @@ export function useVoice(opts: UseVoiceOptions = {}) {
         stream.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
 
-        if (audioBlob.size < 1000) {
-          // Too small, probably accidental
+        if (audioBlob.size < 2000) {
+          // Too small (less than ~0.1s of audio), ignore
+          console.log('[voice] Audio too short, discarding');
           setState('disconnected');
           return;
         }
+
+        // Add a small delay to ensure all chunks are collected
+        await new Promise((r) => setTimeout(r, 100));
 
         // Step 1: Transcribe audio
         setState('transcribing');
@@ -197,7 +201,7 @@ export function useVoice(opts: UseVoiceOptions = {}) {
         }
       };
 
-      recorder.start();
+      recorder.start(250); // push chunks every 250ms
       isRecordingRef.current = true;
       setState('recording');
     } catch (err: any) {
