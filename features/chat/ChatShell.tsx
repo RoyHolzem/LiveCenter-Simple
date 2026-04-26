@@ -97,7 +97,7 @@ export function ChatShell() {
               voiceState={voice.state}
               voiceError={voice.error}
               onToggleVoice={voice.toggle}
-              voiceActive={voice.isConnected}
+              voiceActive={voice.isActive}
             />
 
             <RightPanel
