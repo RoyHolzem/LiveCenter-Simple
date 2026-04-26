@@ -107,7 +107,7 @@ export function useVoice(opts: UseVoiceOptions = {}) {
               Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({
-              model: 'openclaw',
+              model: 'operator',
               stream: true,
               messages: [{ role: 'user', content: text.trim() }],
             }),
