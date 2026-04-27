@@ -2,13 +2,13 @@ import { CloudTrailClient, LookupEventsCommand } from '@aws-sdk/client-cloudtrai
 import { NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/cognito-jwt';
 
-const region = process.env.NEXT_PUBLIC_CT_AWS_REGION || 'eu-central-1';
+const region = process.env.CT_AWS_REGION || 'eu-central-1';
 
 const client = new CloudTrailClient({
   region,
   credentials: {
-    accessKeyId: process.env.NEXT_PUBLIC_CT_AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.NEXT_PUBLIC_CT_AWS_SECRET_ACCESS_KEY || '',
+    accessKeyId: process.env.CT_AWS_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.CT_AWS_SECRET_ACCESS_KEY || '',
   },
 });
 
