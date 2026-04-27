@@ -5,14 +5,15 @@ import { publicConfig } from './chat-config';
 import { useAuthToken } from '../auth/AuthWrapper';
 import { useChat } from './hooks/useChat';
 import { useVoice } from './hooks/useVoice';
+import { useBootSequence } from './hooks/useBootSequence';
 import { useTelecom } from './hooks/useTelecom';
 import { useGitHub } from './hooks/useGitHub';
-import { useCloudTrail } from './hooks/useCloudTrail';
 import { TopNav, type AppMode } from './components/TopNav';
 import { ChatCenter } from './components/ChatCenter';
 import { LeftPanel } from './components/LeftPanel';
 import { RightPanel } from './components/RightPanel';
 import { ModuleDashboard } from './components/ModuleDashboard';
+import { BootScreen } from './components/BootScreen';
 
 import type { TelecomView } from '@/lib/types';
 import styles from './chat-shell.module.css';
@@ -28,14 +29,14 @@ export function ChatShell() {
   const [activeView] = useState<TelecomView>('incidents');
   const [search] = useState('');
 
-  const { awsStatus, actionLog, addXenaAction } = useCloudTrail(getAuthToken);
   const { ghStatus, ghCommit } = useGitHub();
 
-  const chat = useChat(addXenaAction);
+  const chat = useChat();
+  const boot = useBootSequence();
 
   // Voice hook with callbacks that inject into the chat message stream
   const voice = useVoice({
-    onTranscript: useCallback((text: string) => {
+    onUserTranscript: useCallback((text: string) => {
       chat.addVoiceUserMessage(text);
     }, [chat]),
 
@@ -43,9 +44,13 @@ export function ChatShell() {
       chat.resetVoiceAssistant();
     }, [chat]),
 
-    onAssistantText: useCallback((delta: string) => {
+    onAssistantDelta: useCallback((delta: string) => {
       chat.appendVoiceAssistantDelta(delta);
     }, [chat]),
+
+    onResponseDone: useCallback(() => {
+      // no-op, response fully streamed
+    }, []),
 
     onError: useCallback((err: string) => {
       console.error('[voice]', err);
@@ -56,15 +61,26 @@ export function ChatShell() {
   const telecom = useTelecom(activeView, getAuthToken, search);
 
   const isXenaMode = mode === 'xena';
+  const isReady = boot.bootState === 'ready';
 
   return (
     <div className={styles.shell}>
+      {!isReady ? (
+        <BootScreen
+          bootState={boot.bootState}
+          steps={boot.steps}
+          progress={boot.progress}
+          onStart={boot.startBoot}
+          assistantName={assistantName}
+          assistantInitial={assistantInitial}
+        />
+      ) : (
+        <>
       <TopNav
         mode={mode}
         setMode={setMode}
         ghStatus={ghStatus}
         ghCommit={ghCommit}
-        awsStatus={awsStatus}
       />
 
       <div className={styles.body}>
@@ -72,7 +88,6 @@ export function ChatShell() {
           <>
             <LeftPanel
               visible
-              actionLog={actionLog}
               selectedContext={telecom.selectedRecord?.recordId ?? null}
             />
 
@@ -93,7 +108,7 @@ export function ChatShell() {
               voiceState={voice.state}
               voiceError={voice.error}
               onToggleVoice={voice.toggle}
-              voiceActive={voice.isConnected}
+              voiceActive={voice.isActive}
             />
 
             <RightPanel
@@ -109,6 +124,8 @@ export function ChatShell() {
           />
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }

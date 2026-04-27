@@ -88,19 +88,3 @@ export type XenaActionEvent = {
   detail?: string;
   timestamp?: string;
 };
-
-/* ─── Activity Log ─── */
-
-export type ActionSource = 'xena' | 'cloudtrail';
-
-export type ActionLogEntry = {
-  id: string;
-  timestamp: string;
-  verb: string;
-  category: string;
-  label: string;
-  resource?: string;
-  region?: string;
-  detail?: string;
-  source: ActionSource;
-};

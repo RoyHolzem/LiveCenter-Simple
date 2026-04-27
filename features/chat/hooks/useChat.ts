@@ -6,7 +6,7 @@ import { makeId } from '../chat-utils';
 
 const nowIso = () => new Date().toISOString();
 
-export function useChat(addXenaAction: (event: import('@/lib/types').XenaActionEvent) => void) {
+export function useChat(addXenaAction?: (event: import('@/lib/types').XenaActionEvent) => void) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: makeId(),
@@ -131,7 +131,7 @@ export function useChat(addXenaAction: (event: import('@/lib/types').XenaActionE
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          model: 'openclaw',
+          model: 'openclaw/operator',
           stream: true,
           messages: [
             ...messages
@@ -170,7 +170,7 @@ export function useChat(addXenaAction: (event: import('@/lib/types').XenaActionE
           try {
             const parsed = JSON.parse(raw);
             if (parsed.type === 'action') {
-              addXenaAction(parsed as import('@/lib/types').XenaActionEvent);
+              addXenaAction?.(parsed as import('@/lib/types').XenaActionEvent);
               continue;
             }
             const delta = parsed.choices?.[0]?.delta?.content ?? parsed.choices?.[0]?.message?.content;
