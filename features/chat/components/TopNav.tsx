@@ -18,10 +18,9 @@ interface TopNavProps {
   setMode: (mode: AppMode) => void;
   ghStatus: 'connected' | 'checking' | 'error';
   ghCommit: string;
-  awsStatus: 'connected' | 'checking' | 'error';
 }
 
-export function TopNav({ mode, setMode, ghStatus, ghCommit, awsStatus }: TopNavProps) {
+export function TopNav({ mode, setMode, ghStatus, ghCommit }: TopNavProps) {
   return (
     <nav className={styles.topNav}>
       <div className={styles.topNavLeft}>
@@ -54,10 +53,6 @@ export function TopNav({ mode, setMode, ghStatus, ghCommit, awsStatus }: TopNavP
           GitHub
         </div>
         <div className={styles.topNavLinkMono}>{ghCommit}</div>
-        <div className={cn(styles.topNavLink, styles[`link_${awsStatus}`])}>
-          <span className={styles.topNavLinkDot} />
-          AWS
-        </div>
       </div>
     </nav>
   );

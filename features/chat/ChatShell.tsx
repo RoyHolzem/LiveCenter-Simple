@@ -1,20 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { publicConfig } from './chat-config';
 import { useAuthToken } from '../auth/AuthWrapper';
 import { useChat } from './hooks/useChat';
+import { useVoice } from './hooks/useVoice';
+import { useBootSequence } from './hooks/useBootSequence';
 import { useTelecom } from './hooks/useTelecom';
 import { useGitHub } from './hooks/useGitHub';
-import { useCloudTrail } from './hooks/useCloudTrail';
 import { TopNav, type AppMode } from './components/TopNav';
 import { ChatCenter } from './components/ChatCenter';
 import { LeftPanel } from './components/LeftPanel';
 import { RightPanel } from './components/RightPanel';
 import { ModuleDashboard } from './components/ModuleDashboard';
+import { BootScreen } from './components/BootScreen';
 
 import type { TelecomView } from '@/lib/types';
 import styles from './chat-shell.module.css';
+
+const nowIso = () => new Date().toISOString();
 
 export function ChatShell() {
   const { assistantName } = publicConfig;
@@ -25,24 +29,58 @@ export function ChatShell() {
   const [activeView] = useState<TelecomView>('incidents');
   const [search] = useState('');
 
-  const { awsStatus, actionLog, addXenaAction } = useCloudTrail(getAuthToken);
   const { ghStatus, ghCommit } = useGitHub();
 
-  const chat = useChat(addXenaAction);
+  const chat = useChat();
+  const boot = useBootSequence();
+
+  // Voice hook with callbacks that inject into the chat message stream
+  const voice = useVoice({
+    onUserTranscript: useCallback((text: string) => {
+      chat.addVoiceUserMessage(text);
+    }, [chat]),
+
+    onResponseStart: useCallback(() => {
+      chat.resetVoiceAssistant();
+    }, [chat]),
+
+    onAssistantDelta: useCallback((delta: string) => {
+      chat.appendVoiceAssistantDelta(delta);
+    }, [chat]),
+
+    onResponseDone: useCallback(() => {
+      // no-op, response fully streamed
+    }, []),
+
+    onError: useCallback((err: string) => {
+      console.error('[voice]', err);
+    }, []),
+  });
 
   // Telecom data for contextual side panels in Xena mode
   const telecom = useTelecom(activeView, getAuthToken, search);
 
   const isXenaMode = mode === 'xena';
+  const isReady = boot.bootState === 'ready';
 
   return (
     <div className={styles.shell}>
+      {!isReady ? (
+        <BootScreen
+          bootState={boot.bootState}
+          steps={boot.steps}
+          progress={boot.progress}
+          onStart={boot.startBoot}
+          assistantName={assistantName}
+          assistantInitial={assistantInitial}
+        />
+      ) : (
+        <>
       <TopNav
         mode={mode}
         setMode={setMode}
         ghStatus={ghStatus}
         ghCommit={ghCommit}
-        awsStatus={awsStatus}
       />
 
       <div className={styles.body}>
@@ -50,7 +88,6 @@ export function ChatShell() {
           <>
             <LeftPanel
               visible
-              actionLog={actionLog}
               selectedContext={telecom.selectedRecord?.recordId ?? null}
             />
 
@@ -68,6 +105,10 @@ export function ChatShell() {
               textareaRef={chat.textareaRef}
               handleSubmit={(e) => chat.handleSubmit(e, getAuthToken)}
               handleKeyDown={chat.handleKeyDown}
+              voiceState={voice.state}
+              voiceError={voice.error}
+              onToggleVoice={voice.toggle}
+              voiceActive={voice.isActive}
             />
 
             <RightPanel
@@ -83,6 +124,8 @@ export function ChatShell() {
           />
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }
