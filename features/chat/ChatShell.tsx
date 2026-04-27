@@ -8,7 +8,6 @@ import { useVoice } from './hooks/useVoice';
 import { useBootSequence } from './hooks/useBootSequence';
 import { useTelecom } from './hooks/useTelecom';
 import { useGitHub } from './hooks/useGitHub';
-import { useCloudTrail } from './hooks/useCloudTrail';
 import { TopNav, type AppMode } from './components/TopNav';
 import { ChatCenter } from './components/ChatCenter';
 import { LeftPanel } from './components/LeftPanel';
@@ -30,10 +29,9 @@ export function ChatShell() {
   const [activeView] = useState<TelecomView>('incidents');
   const [search] = useState('');
 
-  const { awsStatus, actionLog, addXenaAction } = useCloudTrail(getAuthToken);
   const { ghStatus, ghCommit } = useGitHub();
 
-  const chat = useChat(addXenaAction);
+  const chat = useChat();
   const boot = useBootSequence();
 
   // Voice hook with callbacks that inject into the chat message stream
@@ -83,7 +81,6 @@ export function ChatShell() {
         setMode={setMode}
         ghStatus={ghStatus}
         ghCommit={ghCommit}
-        awsStatus={awsStatus}
       />
 
       <div className={styles.body}>
@@ -91,7 +88,6 @@ export function ChatShell() {
           <>
             <LeftPanel
               visible
-              actionLog={actionLog}
               selectedContext={telecom.selectedRecord?.recordId ?? null}
             />
 
