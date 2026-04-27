@@ -263,6 +263,9 @@ npm run dev
 │       └── view-meta.ts
 ├── infra/
 │   ├── amplify-app.template.yaml   # Main stack: Cognito + SES + Amplify + Secrets
+│   ├── vps-workspaces/
+│   │   ├── workspace/              # Xena main agent workspace files
+│   │   └── workspace-operator/     # Operator agent workspace files
 │   └── xena-ops-api/
 │       ├── template.yaml           # Operations API: Lambda + API Gateway + IAM
 │       └── src/index.mjs           # Lambda handler (6 endpoints)
@@ -290,6 +293,69 @@ Also add the Cognito domain URL (from stack outputs) to your Google OAuth redire
 - In SES sandbox mode you can only send to verified addresses and the daily limit is 200 emails.
 - To request production access: AWS Console → SES → Account dashboard → Request production access. Free tier includes 3,000 emails/month.
 - Cost beyond free tier: $0.10 per 1,000 emails.
+
+## VPS Agent Workspaces
+
+The OpenClaw gateway on the Lightsail VPS (`18.153.145.14`) runs two agents, each with its own workspace:
+
+| Workspace | Agent | Model | Purpose |
+|---|---|---|---|
+| `~/.openclaw/workspace` | Xena ✦ | zai/glm-5.1 | Main assistant — full-stack, infra, repos |
+| `~/.openclaw/workspace-operator` | Operator 🔧 | inceptionlabs/mercury-2 | Telecom data queries via Operations API |
+
+### Workspace Files
+
+Both workspaces follow the same structure:
+
+| File | Purpose |
+|---|---|
+| `AGENTS.md` | Session startup sequence, safety rules |
+| `SOUL.md` | Agent identity, communication style, guardrails |
+| `TOOLS.md` | Available tools and how to use them |
+| `IDENTITY.md` | Machine-readable agent profile |
+| `MEMORY.md` | Long-term curated memory |
+| `USER.md` | Profile of the human |
+
+The canonical copies are stored in the repo under `infra/vps-workspaces/`:
+
+```
+infra/vps-workspaces/
+├── workspace/              # Xena main agent
+│   ├── AGENTS.md
+│   ├── SOUL.md
+│   ├── TOOLS.md
+│   ├── IDENTITY.md
+│   └── MEMORY.md
+└── workspace-operator/     # Operator agent
+    ├── AGENTS.md
+    ├── SOUL.md
+    ├── TOOLS.md
+    ├── IDENTITY.md
+    └── MEMORY.md
+```
+
+### Deploying Workspace Updates
+
+```bash
+# From this machine (with SSH access to the VPS):
+scp -i <key.pem> infra/vps-workspaces/workspace/* ubuntu@18.153.145.14:/home/ubuntu/.openclaw/workspace/
+scp -i <key.pem> infra/vps-workspaces/workspace-operator/* ubuntu@18.153.145.14:/home/ubuntu/.openclaw/workspace-operator/
+```
+
+Then restart the gateway so agents pick up changes:
+```bash
+ssh ubuntu@18.153.145.14 "openclaw gateway restart"
+```
+
+### Operator Sandbox Constraints
+
+The operator agent runs inside an OpenClaw Docker sandbox. It does **not** have:
+- `curl`, `wget`, or any HTTP CLI tools
+- `jq` or JSON processing tools
+- `aws` CLI or direct DynamoDB access
+- Any AWS credentials
+
+All data access uses OpenClaw's built-in `web_fetch` tool to call the Operations API endpoints.
 
 ## License
 
