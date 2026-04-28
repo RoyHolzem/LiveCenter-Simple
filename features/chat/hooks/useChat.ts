@@ -6,7 +6,7 @@ import { makeId } from '../chat-utils';
 
 const nowIso = () => new Date().toISOString();
 
-export function useChat(selectedModel: string = 'openclaw/operator', addXenaAction?: (event: import('@/lib/types').XenaActionEvent) => void) {
+export function useChat(selectedModel: string = 'inceptionlabs/mercury-2', addXenaAction?: (event: import('@/lib/types').XenaActionEvent) => void) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: makeId(),
@@ -127,7 +127,8 @@ export function useChat(selectedModel: string = 'openclaw/operator', addXenaActi
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          model: selectedModel,
+          model: 'openclaw/operator',
+          model_override: selectedModel,
           stream: true,
           messages: [
             ...messages
