@@ -21,7 +21,7 @@ import styles from './chat-shell.module.css';
 
 const nowIso = () => new Date().toISOString();
 
-const DEFAULT_MODEL = 'openclaw/operator';
+const DEFAULT_MODEL = 'inceptionlabs/mercury-2';
 
 export function ChatShell() {
   const { assistantName } = publicConfig;
