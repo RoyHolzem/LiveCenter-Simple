@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  let body: { messages?: Array<{ role: string; content: string }>; model?: string; stream?: boolean };
+  let body: { messages?: Array<{ role: string; content: string }>; model?: string; model_override?: string; stream?: boolean };
   try {
     body = await request.json();
   } catch {
@@ -127,4 +127,5 @@ export async function POST(request: Request) {
 
   return Response.json({ error: `Gateway unavailable after ${maxRetries} attempts: ${lastError}` }, { status: 504 });
 }
+
 
