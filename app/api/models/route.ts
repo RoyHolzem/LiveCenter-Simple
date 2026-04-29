@@ -32,42 +32,59 @@ export type ModelEntry = {
   provider: string;   // provider name: "zai"
 };
 
+const FALLBACK_MODELS: ModelEntry[] = [
+  { id: 'zai/glm-5', name: 'GLM-5', provider: 'zai' },
+  { id: 'zai/glm-5-turbo', name: 'GLM-5 Turbo', provider: 'zai' },
+  { id: 'zai/glm-5.1', name: 'GLM-5.1', provider: 'zai' },
+  { id: 'zai/glm-4.7', name: 'GLM-4.7', provider: 'zai' },
+  { id: 'zai/glm-4.7-flash', name: 'GLM-4.7 Flash', provider: 'zai' },
+  { id: 'zai/glm-4.7-flashx', name: 'GLM-4.7 FlashX', provider: 'zai' },
+  { id: 'zai/glm-4.6', name: 'GLM-4.6', provider: 'zai' },
+  { id: 'zai/glm-4.6v', name: 'GLM-4.6V', provider: 'zai' },
+  { id: 'zai/glm-4.5', name: 'GLM-4.5', provider: 'zai' },
+  { id: 'zai/glm-4.5-air', name: 'GLM-4.5 Air', provider: 'zai' },
+  { id: 'zai/glm-4.5-flash', name: 'GLM-4.5 Flash', provider: 'zai' },
+  { id: 'zai/glm-4.5v', name: 'GLM-4.5V', provider: 'zai' },
+  { id: 'inceptionlabs/mercury-2', name: 'Mercury 2', provider: 'inceptionlabs' },
+];
+
 /**
- * Returns the raw provider models from the OpenClaw Gateway config.
- * These can be used as model_override values in chat completions requests.
+ * Returns the raw provider models from the OpenClaw Gateway.
+ * Falls back to a hardcoded list on any failure.
  */
 export async function GET() {
   try {
     const token = await getGatewayToken();
-    // Call the gateway's config/models endpoint — returns the raw config
-    const res = await fetch(`${GATEWAY_URL}/v1/config/models`, {
+
+    const res = await fetch(`${GATEWAY_URL}/v1/models`, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
     if (!res.ok) {
-      // Fallback: return a hardcoded list if the endpoint doesn't exist
-      return Response.json({
-        models: [
-          { id: 'zai/glm-5', name: 'GLM-5', provider: 'zai' },
-          { id: 'zai/glm-5-turbo', name: 'GLM-5 Turbo', provider: 'zai' },
-          { id: 'zai/glm-5.1', name: 'GLM-5.1', provider: 'zai' },
-          { id: 'zai/glm-4.7', name: 'GLM-4.7', provider: 'zai' },
-          { id: 'zai/glm-4.7-flash', name: 'GLM-4.7 Flash', provider: 'zai' },
-          { id: 'zai/glm-4.7-flashx', name: 'GLM-4.7 FlashX', provider: 'zai' },
-          { id: 'zai/glm-4.6', name: 'GLM-4.6', provider: 'zai' },
-          { id: 'zai/glm-4.6v', name: 'GLM-4.6V', provider: 'zai' },
-          { id: 'zai/glm-4.5', name: 'GLM-4.5', provider: 'zai' },
-          { id: 'zai/glm-4.5-air', name: 'GLM-4.5 Air', provider: 'zai' },
-          { id: 'zai/glm-4.5-flash', name: 'GLM-4.5 Flash', provider: 'zai' },
-          { id: 'zai/glm-4.5v', name: 'GLM-4.5V', provider: 'zai' },
-          { id: 'inceptionlabs/mercury-2', name: 'Mercury 2', provider: 'inceptionlabs' },
-        ],
-      });
+      console.warn('[models] Gateway /v1/models returned', res.status, '- using fallback');
+      return Response.json({ models: FALLBACK_MODELS });
+    }
+
+    // Guard: ensure the response is actually JSON
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      console.warn('[models] Gateway returned non-JSON content-type:', contentType, '- using fallback');
+      return Response.json({ models: FALLBACK_MODELS });
     }
 
     const data = await res.json();
-    return Response.json(data);
+
+    // If the gateway returns models in a known shape, pass through;
+    // otherwise use fallback.
+    if (data?.models && Array.isArray(data.models)) {
+      return Response.json(data);
+    }
+
+    // Gateway returned valid JSON but unexpected shape — use fallback
+    return Response.json({ models: FALLBACK_MODELS });
   } catch (err: any) {
-    return Response.json({ error: err.message }, { status: 500 });
+    console.error('[models] Error fetching models:', err.message);
+    // Never 500 — always return the fallback so the UI keeps working
+    return Response.json({ models: FALLBACK_MODELS });
   }
 }
