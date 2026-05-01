@@ -1,10 +1,10 @@
-import { verifyToken } from '@/lib/cognito-jwt';
+﻿import { verifyToken } from '@/lib/cognito-jwt';
 import {
   SecretsManagerClient,
   GetSecretValueCommand,
 } from '@aws-sdk/client-secrets-manager';
 
-// Amplify SSR (Lambda) max execution — 60s for streaming LLM responses
+// Amplify SSR (Lambda) max execution ù 60s for streaming LLM responses
 export const maxDuration = 60;
 
 const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || '';
@@ -75,15 +75,18 @@ export async function POST(request: Request) {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 25_000); // 25s per attempt
 
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + gatewayToken,
+      };
+      if (body.model_override) {
+        headers['x-openclaw-model'] = body.model_override;
+      }
       const response = await fetch(gatewayUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + gatewayToken,
-        },
+        headers,
         body: JSON.stringify({
           model: body.model || 'openclaw/operator',
-          model_override: body.model_override || undefined,
           stream: true,
           messages: body.messages,
         }),
