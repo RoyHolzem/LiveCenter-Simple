@@ -20,6 +20,13 @@ export function useChat(selectedModel: string = 'inceptionlabs/mercury-2', addXe
   const [error, setError] = useState<string | null>(null);
   const [isFocused, setIsFocused] = useState(false);
 
+  // Model fallback tracking
+  const [modelFallback, setModelFallback] = useState<{
+    requested: string;
+    actual?: string;
+    fellBack: boolean;
+  } | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const assistantBufferRef = useRef('');
@@ -109,6 +116,7 @@ export function useChat(selectedModel: string = 'inceptionlabs/mercury-2', addXe
     const assistantMessageId = makeId();
     assistantBufferRef.current = '';
     setError(null);
+    setModelFallback(null); // Reset fallback state for new message
     setDraft('');
     setPresence('processing');
 
@@ -139,9 +147,26 @@ export function useChat(selectedModel: string = 'inceptionlabs/mercury-2', addXe
         }),
       });
 
+      // Check for model fallback from response headers
+      const requestedModel = response.headers.get('x-requested-model') || selectedModel;
+      const actualModel = response.headers.get('x-actual-model') || '';
+      if (actualModel && actualModel !== requestedModel) {
+        setModelFallback({ requested: requestedModel, actual: actualModel, fellBack: true });
+        console.warn(`[chat] Model fallback: requested=${requestedModel}, actual=${actualModel}`);
+      }
+
       if (!response.ok || !response.body) {
         const text = await response.text();
-        throw new Error(text || `Server error ${response.status}`);
+        // Try to parse error body for model info
+        let errorData: any = {};
+        try { errorData = JSON.parse(text); } catch { /* not JSON */ }
+
+        // If the error includes requested_model, surface it
+        const errMsg = errorData.error || text || `Server error ${response.status}`;
+        const modelCtx = errorData.requested_model
+          ? ` (model: ${errorData.requested_model})`
+          : '';
+        throw new Error(errMsg + modelCtx);
       }
 
       const reader = response.body.getReader();
@@ -224,5 +249,6 @@ export function useChat(selectedModel: string = 'inceptionlabs/mercury-2', addXe
     addVoiceUserMessage,
     appendVoiceAssistantDelta,
     resetVoiceAssistant,
+    modelFallback,
   };
 }
