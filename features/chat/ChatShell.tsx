@@ -89,6 +89,7 @@ export function ChatShell() {
         models={models}
         selectedModel={selectedModel}
         setSelectedModel={setSelectedModel}
+        modelFallback={chat.modelFallback}
       />
 
       <div className={styles.body}>
