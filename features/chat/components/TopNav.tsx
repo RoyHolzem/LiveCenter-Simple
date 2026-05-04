@@ -15,6 +15,12 @@ const NAV_ITEMS: Array<{ key: AppMode; label: string; icon: string }> = [
   { key: 'planned-works', label: 'Maintenance', icon: '\u2699' },
 ];
 
+export type ModelFallbackInfo = {
+  requested: string;
+  actual?: string;
+  fellBack: boolean;
+} | null;
+
 interface TopNavProps {
   mode: AppMode;
   setMode: (mode: AppMode) => void;
@@ -23,9 +29,10 @@ interface TopNavProps {
   models: ModelInfo[];
   selectedModel: string;
   setSelectedModel: (model: string) => void;
+  modelFallback?: ModelFallbackInfo;
 }
 
-export function TopNav({ mode, setMode, ghStatus, ghCommit, models, selectedModel, setSelectedModel }: TopNavProps) {
+export function TopNav({ mode, setMode, ghStatus, ghCommit, models, selectedModel, setSelectedModel, modelFallback }: TopNavProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -41,6 +48,11 @@ export function TopNav({ mode, setMode, ghStatus, ghCommit, models, selectedMode
 
   const currentModel = models.find((m) => m.id === selectedModel);
   const displayName = currentModel?.name || selectedModel.split('/').pop() || selectedModel;
+
+  // Format the actual model name for the fallback badge
+  const fallbackActualName = modelFallback?.actual
+    ? modelFallback.actual.split('/').pop() || modelFallback.actual
+    : 'default';
 
   // Group models by provider
   const grouped = models.reduce<Record<string, ModelInfo[]>>((acc, m) => {
@@ -86,6 +98,11 @@ export function TopNav({ mode, setMode, ghStatus, ghCommit, models, selectedMode
           >
             <span className={styles.modelSelectorIcon}>⬡</span>
             <span className={styles.modelSelectorLabel}>{displayName}</span>
+            {modelFallback?.fellBack && (
+              <span className={styles.modelFallbackBadge} title={`Fell back from ${modelFallback.requested} to ${fallbackActualName}`}>
+                ⚠ {fallbackActualName}
+              </span>
+            )}
             <span className={cn(styles.modelSelectorChevron, dropdownOpen && styles.modelSelectorChevronOpen)}>▾</span>
           </button>
           {dropdownOpen && models.length > 0 && (

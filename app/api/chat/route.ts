@@ -69,6 +69,7 @@ export async function POST(request: Request) {
   const gatewayUrl = GATEWAY_URL + CHAT_PATH;
   const maxRetries = 3;
   let lastError: string = '';
+  const requestedModel = body.model_override || body.model || 'openclaw/operator';
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -104,19 +105,33 @@ export async function POST(request: Request) {
           await new Promise((r) => setTimeout(r, 1500));
           continue;
         }
+
+        // Propagate error with model context so frontend can show what failed
         return Response.json(
-          { error: lastError },
+          {
+            error: lastError,
+            requested_model: requestedModel,
+            attempt,
+          },
           { status: response.status }
         );
       }
 
+      // Forward the actual model used (if gateway provides it) + what was requested
+      const actualModel = response.headers.get('x-actual-model') || response.headers.get('x-model') || '';
+      const responseHeaders: Record<string, string> = {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+        'x-requested-model': requestedModel,
+      };
+      if (actualModel) {
+        responseHeaders['x-actual-model'] = actualModel;
+      }
+
       return new Response(response.body, {
         status: 200,
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          Connection: 'keep-alive',
-        },
+        headers: responseHeaders,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Gateway connection failed';
@@ -128,7 +143,11 @@ export async function POST(request: Request) {
     }
   }
 
-  return Response.json({ error: `Gateway unavailable after ${maxRetries} attempts: ${lastError}` }, { status: 504 });
+  return Response.json(
+    {
+      error: `Gateway unavailable after ${maxRetries} attempts: ${lastError}`,
+      requested_model: requestedModel,
+    },
+    { status: 504 }
+  );
 }
-
-
