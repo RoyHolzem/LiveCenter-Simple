@@ -1,12 +1,26 @@
 'use client';
 
+/**
+ * OpenClaw / gateway may inject SSE `data:` JSON lines alongside token deltas:
+ * - Focus telecom row: `{ "type": "telecom_focus", "view": "incidents"|"events"|"planned-works", "recordId": "<id>", "label"?: "<optional>" }`
+ * - Ops-style action: `{ "type": "action", ... }` (see XenaActionEvent in @/lib/types)
+ */
+
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { AvatarState, ChatMessage, PresenceState } from '@/lib/types';
+import type { AvatarState, ChatMessage, PresenceState, XenaActionEvent, XenaTelecomFocusEvent } from '@/lib/types';
 import { makeId } from '../chat-utils';
+import { parseSseDataObject } from '../sse-parse';
 
 const nowIso = () => new Date().toISOString();
 
-export function useChat(selectedModel: string = 'inceptionlabs/mercury-2', addXenaAction?: (event: import('@/lib/types').XenaActionEvent) => void) {
+export type UseChatOptions = {
+  onXenaAction?: (event: XenaActionEvent) => void;
+  onTelecomFocus?: (event: XenaTelecomFocusEvent) => void;
+};
+
+export function useChat(selectedModel: string = 'inceptionlabs/mercury-2', options?: UseChatOptions) {
+  const onXenaAction = options?.onXenaAction;
+  const onTelecomFocus = options?.onTelecomFocus;
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: makeId(),
@@ -191,14 +205,18 @@ export function useChat(selectedModel: string = 'inceptionlabs/mercury-2', addXe
 
           try {
             const parsed = JSON.parse(raw);
-            if (parsed.type === 'action') {
-              addXenaAction?.(parsed as import('@/lib/types').XenaActionEvent);
+            const line = parseSseDataObject(parsed);
+            if (line.kind === 'telecom_focus') {
+              onTelecomFocus?.(line.event);
               continue;
             }
-            const delta = parsed.choices?.[0]?.delta?.content ?? parsed.choices?.[0]?.message?.content;
-            if (delta) {
+            if (line.kind === 'action') {
+              onXenaAction?.(line.event);
+              continue;
+            }
+            if (line.kind === 'delta') {
               setPresence('typing');
-              assistantBufferRef.current += delta;
+              assistantBufferRef.current += line.text;
               const text = assistantBufferRef.current;
               setMessages((current) => current.map((message) => (
                 message.id === assistantMessageId ? { ...message, content: text } : message
@@ -223,7 +241,7 @@ export function useChat(selectedModel: string = 'inceptionlabs/mercury-2', addXe
         )
       );
     }
-  }, [draft, messages, presence, selectedModel, addXenaAction]);
+  }, [draft, messages, presence, selectedModel, onXenaAction, onTelecomFocus]);
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {

@@ -1,5 +1,5 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, ScanCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, GetCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/cognito-jwt';
 import type { LabeledValue, TelecomApiResponse, TelecomRecord, TelecomView } from '@/lib/types';
@@ -249,6 +249,14 @@ function normalize(view: TelecomView, item: RawItem): TelecomRecord {
   return normalizePlannedWork(item);
 }
 
+function mergeRecord(items: TelecomRecord[], record: TelecomRecord): TelecomRecord[] {
+  const idx = items.findIndex((r) => r.recordId === record.recordId);
+  if (idx === -1) return [...items, record];
+  const next = [...items];
+  next[idx] = record;
+  return next;
+}
+
 function sortRecords(view: TelecomView, items: TelecomRecord[]) {
   return [...items].sort((left, right) => {
     if (view === 'planned-works') {
@@ -285,6 +293,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Invalid view' }, { status: 400 });
   }
 
+  const recordIdParam = request.nextUrl.searchParams.get('recordId')?.trim() || '';
+
   try {
     const response = await client.send(
       new ScanCommand({
@@ -293,7 +303,25 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    const items = sortRecords(view, (response.Items || []).map((item) => normalize(view, item as RawItem)));
+    let items = sortRecords(view, (response.Items || []).map((item) => normalize(view, item as RawItem)));
+
+    if (recordIdParam) {
+      try {
+        const got = await client.send(
+          new GetCommand({
+            TableName: tableNames[view],
+            Key: { recordId: recordIdParam },
+          })
+        );
+        if (got.Item) {
+          const one = normalize(view, got.Item as RawItem);
+          items = sortRecords(view, mergeRecord(items, one));
+        }
+      } catch {
+        // Wrong table key or throttling — return scan-only result
+      }
+    }
+
     const payload: TelecomApiResponse = {
       ok: true,
       view,

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import type { XenaTelecomFocusEvent } from '@/lib/types';
 import { publicConfig } from './chat-config';
 import { useAuthToken } from '../auth/AuthWrapper';
 import { useChat } from './hooks/useChat';
@@ -19,8 +20,6 @@ import { BootScreen } from './components/BootScreen';
 import type { TelecomView } from '@/lib/types';
 import styles from './chat-shell.module.css';
 
-const nowIso = () => new Date().toISOString();
-
 const DEFAULT_MODEL = 'inceptionlabs/mercury-2';
 
 export function ChatShell() {
@@ -29,17 +28,26 @@ export function ChatShell() {
   const getAuthToken = useAuthToken();
 
   const [mode, setMode] = useState<AppMode>('xena');
-  const [activeView] = useState<TelecomView>('incidents');
+  const [contextView, setContextView] = useState<TelecomView>('incidents');
   const [search] = useState('');
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
 
   const { ghStatus, ghCommit } = useGitHub();
   const { models } = useModels();
 
-  const chat = useChat(selectedModel);
-  const boot = useBootSequence();
+  const telecom = useTelecom(contextView, getAuthToken, search, {
+    onContextViewChange: setContextView,
+  });
 
-  // Voice hook with callbacks that inject into the chat message stream
+  const onTelecomFocus = useCallback(
+    (event: XenaTelecomFocusEvent) => {
+      void telecom.focusRecord(event.view, event.recordId);
+    },
+    [telecom],
+  );
+
+  const chat = useChat(selectedModel, { onTelecomFocus });
+
   const voice = useVoice({
     onUserTranscript: useCallback((text: string) => {
       chat.addVoiceUserMessage(text);
@@ -60,10 +68,11 @@ export function ChatShell() {
     onError: useCallback((err: string) => {
       console.error('[voice]', err);
     }, []),
+
+    onTelecomFocus,
   });
 
-  // Telecom data for contextual side panels in Xena mode
-  const telecom = useTelecom(activeView, getAuthToken, search);
+  const boot = useBootSequence();
 
   const isXenaMode = mode === 'xena';
   const isReady = boot.bootState === 'ready';
@@ -98,6 +107,8 @@ export function ChatShell() {
             <LeftPanel
               visible
               selectedContext={telecom.selectedRecord?.recordId ?? null}
+              contextView={contextView}
+              onContextViewChange={setContextView}
             />
 
             <ChatCenter
@@ -123,7 +134,7 @@ export function ChatShell() {
             <RightPanel
               visible={!!telecom.selectedRecord}
               selectedRecord={telecom.selectedRecord}
-              activeView={activeView}
+              activeView={contextView}
             />
           </>
         ) : (

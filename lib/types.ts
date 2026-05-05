@@ -88,3 +88,11 @@ export type XenaActionEvent = {
   detail?: string;
   timestamp?: string;
 };
+
+/** Gateway SSE control: focus a telecom row in the Xena side panels. Emit as one `data: {...}` line. */
+export type XenaTelecomFocusEvent = {
+  type: 'telecom_focus';
+  view: TelecomView;
+  recordId: string;
+  label?: string;
+};

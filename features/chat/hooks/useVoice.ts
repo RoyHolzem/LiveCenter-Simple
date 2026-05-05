@@ -1,7 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { XenaTelecomFocusEvent } from '@/lib/types';
 import { useAuthToken } from '../../auth/AuthWrapper';
+import { parseSseDataObject } from '../sse-parse';
 
 export type VoiceState = 'disconnected' | 'recording' | 'transcribing' | 'responding' | 'playing' | 'error';
 
@@ -11,6 +13,7 @@ interface UseVoiceOptions {
   onResponseStart?: () => void;
   onResponseDone?: () => void;
   onError?: (error: string) => void;
+  onTelecomFocus?: (event: XenaTelecomFocusEvent) => void;
 }
 
 export function useVoice(opts: UseVoiceOptions = {}) {
@@ -227,11 +230,18 @@ export function useVoice(opts: UseVoiceOptions = {}) {
 
               try {
                 const parsed = JSON.parse(raw);
-                const delta = parsed.choices?.[0]?.delta?.content ?? parsed.choices?.[0]?.message?.content;
-                if (delta) {
-                  fullResponse += delta;
-                  unspokenText += delta;
-                  opts.onAssistantDelta?.(delta);
+                const line = parseSseDataObject(parsed);
+                if (line.kind === 'telecom_focus') {
+                  opts.onTelecomFocus?.(line.event);
+                  continue;
+                }
+                if (line.kind === 'action') {
+                  continue;
+                }
+                if (line.kind === 'delta') {
+                  fullResponse += line.text;
+                  unspokenText += line.text;
+                  opts.onAssistantDelta?.(line.text);
                   flushSentences(false);
                 }
               } catch {
