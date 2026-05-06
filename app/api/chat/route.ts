@@ -3,9 +3,86 @@ import {
   SecretsManagerClient,
   GetSecretValueCommand,
 } from '@aws-sdk/client-secrets-manager';
+import type { XenaUiAction } from '@/lib/xena-ui-actions';
 
-// Amplify SSR (Lambda) max execution ù 60s for streaming LLM responses
+// Amplify SSR (Lambda) max execution ~ 60s for streaming LLM responses
 export const maxDuration = 60;
+
+// ---------------------------------------------------------------------------
+// SSE stream transform: inject xena_ui actions when record IDs appear in delta
+// ---------------------------------------------------------------------------
+
+const RECORD_ID_RE = /\b(INCIDENT-LUX-\d+|EVENT-LUX-\d+|PW-LUX-\d+)\b/g;
+
+function recordIdToAction(recordId: string): XenaUiAction | null {
+  if (recordId.startsWith('INCIDENT-')) return { type: 'OPEN_INCIDENT', recordId };
+  if (recordId.startsWith('EVENT-')) return { type: 'OPEN_EVENT', recordId };
+  if (recordId.startsWith('PW-')) return { type: 'OPEN_PLANNED_WORK', recordId };
+  return null;
+}
+
+/**
+ * Create a TransformStream that parses the SSE stream from the gateway.
+ * When a `choices[0].delta.content` chunk contains a recognised record ID,
+ * we inject an additional `data:` line with `{ type: "xena_ui", uiActions: [...] }`.
+ * Each recordId is emitted at most once per request to avoid duplicates.
+ */
+function createXenaUiInjector(): TransformStream<Uint8Array, Uint8Array> {
+  const seen = new Set<string>();
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  let buffer = '';
+
+  return new TransformStream({
+    transform(chunk, controller) {
+      buffer += decoder.decode(chunk, { stream: true });
+      // Split on newlines but keep the last incomplete fragment
+      const parts = buffer.split('\n');
+      buffer = parts.pop()!;
+
+      for (const line of parts) {
+        // Always forward the original line
+        controller.enqueue(encoder.encode(line + '\n'));
+
+        // Inspect SSE data lines for delta content with record IDs
+        if (!line.startsWith('data: ') || line === 'data: [DONE]') continue;
+        try {
+          const json = JSON.parse(line.slice(6));
+          const content: string =
+            json?.choices?.[0]?.delta?.content ??
+            json?.choices?.[0]?.message?.content ??
+            '';
+          if (!content) continue;
+
+          let match: RegExpExecArray | null;
+          RECORD_ID_RE.lastIndex = 0;
+          while ((match = RECORD_ID_RE.exec(content)) !== null) {
+            const recordId = match[1];
+            if (seen.has(recordId)) continue;
+            seen.add(recordId);
+
+            const action = recordIdToAction(recordId);
+            if (!action) continue;
+
+            const payload = JSON.stringify({
+              type: 'xena_ui',
+              uiActions: [action],
+            });
+            // Inject as its own SSE event (double newline terminates it)
+            controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
+          }
+        } catch {
+          // Not JSON — skip
+        }
+      }
+    },
+    flush(controller) {
+      if (buffer) {
+        controller.enqueue(encoder.encode(buffer));
+      }
+    },
+  });
+}
 
 const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || '';
 const CHAT_PATH = process.env.NEXT_PUBLIC_GATEWAY_CHAT_PATH || '/v1/chat/completions';
@@ -129,7 +206,11 @@ export async function POST(request: Request) {
         responseHeaders['x-actual-model'] = actualModel;
       }
 
-      return new Response(response.body, {
+      // Pipe through the xena_ui injector to emit OPEN_* actions from record IDs
+      const injector = createXenaUiInjector();
+      response.body!.pipeTo(injector.writable);
+
+      return new Response(injector.readable, {
         status: 200,
         headers: responseHeaders,
       });
