@@ -8,8 +8,9 @@
   display: flex;
   flex-direction: column;
   background:
-    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(56, 97, 251, 0.08), transparent),
-    radial-gradient(ellipse 50% 40% at 80% 100%, rgba(0, 212, 255, 0.04), transparent),
+    radial-gradient(ellipse 90% 55% at 50% -10%, rgba(56, 97, 251, 0.06), transparent 55%),
+    radial-gradient(ellipse 45% 35% at 100% 100%, rgba(0, 212, 255, 0.035), transparent),
+    linear-gradient(180deg, var(--bg-surface-highlight) 0%, transparent 28%),
     var(--bg-root);
   overflow: hidden;
 }
@@ -27,10 +28,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-glass);
-  backdrop-filter: blur(20px);
+  padding: 0 22px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, rgba(12, 18, 32, 0.95) 0%, var(--bg-glass) 100%);
+  backdrop-filter: blur(24px) saturate(1.2);
   z-index: var(--z-nav);
   flex-shrink: 0;
 }
@@ -91,13 +92,14 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 16px;
+  padding: 6px 14px;
   border-radius: 10px;
   border: none;
   background: transparent;
   color: var(--text-tertiary);
   font-size: 13px;
   font-weight: 600;
+  letter-spacing: -0.01em;
   cursor: pointer;
   transition: all var(--duration-fast) var(--ease-out);
 }
@@ -109,8 +111,8 @@
 
 .topNavTabActive {
   color: var(--text);
-  background: var(--accent-muted);
-  box-shadow: 0 0 16px rgba(56, 97, 251, 0.1);
+  background: linear-gradient(135deg, rgba(56, 97, 251, 0.14), rgba(56, 97, 251, 0.06));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 0 20px rgba(56, 97, 251, 0.08);
 }
 
 .topNavTabIcon {
@@ -167,9 +169,9 @@
   opacity: 0;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--border);
-  background: var(--bg-glass);
-  backdrop-filter: blur(16px);
+  border-right: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, rgba(10, 16, 28, 0.88) 0%, rgba(6, 10, 18, 0.92) 100%);
+  backdrop-filter: blur(20px) saturate(1.15);
   overflow-y: auto;
   overflow-x: hidden;
   transition: width var(--duration-slow) var(--ease-out),
@@ -261,6 +263,53 @@
   color: var(--text-tertiary);
 }
 
+.contextTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.contextTab {
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out);
+}
+
+.contextTab:hover {
+  color: var(--text-secondary);
+  border-color: var(--border);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.contextTabActive {
+  color: var(--text);
+  border-color: rgba(56, 97, 251, 0.28);
+  background: var(--accent-muted);
+}
+
+.contextCardFocused {
+  animation: contextFocusIn 0.45s var(--ease-out) both;
+}
+
+@keyframes contextFocusIn {
+  from {
+    border-color: rgba(91, 127, 252, 0.65);
+    box-shadow: 0 0 0 1px rgba(56, 97, 251, 0.2), 0 8px 28px rgba(56, 97, 251, 0.12);
+  }
+  to {
+    border-color: var(--border-accent);
+    box-shadow: none;
+  }
+}
+
 /* ─── Activity Feed (Side Panel) ─── */
 .activityFeed {
   display: flex;
@@ -313,13 +362,135 @@
   color: var(--text-tertiary);
 }
 
+/* ─── Xena column (activity + chat) ─── */
+.chatColumn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.agentActivityBar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 20px;
+  margin: 0 8px;
+  border-radius: var(--radius);
+  background: rgba(56, 97, 251, 0.08);
+  border: 1px solid rgba(56, 97, 251, 0.15);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.agentActivityDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+  animation: dotPulse 1s ease-in-out infinite;
+}
+
+.agentActivityText {
+  flex: 1;
+  line-height: 1.4;
+}
+
 /* ─── Chat Center ─── */
 .chatCenter {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
   position: relative;
+}
+
+.chatEmptyState {
+  max-width: 420px;
+  padding: 8px 0 24px;
+  color: var(--text-secondary);
+}
+
+.chatEmptyTitle {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 10px;
+}
+
+.chatEmptyBody {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.searchResultsBlock {
+  margin-top: 4px;
+}
+
+.searchResultsTitle {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  margin-bottom: 10px;
+}
+
+.searchResultsList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: min(360px, 45vh);
+  overflow-y: auto;
+}
+
+.searchResultRow {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out);
+}
+
+.searchResultRow:hover {
+  border-color: var(--border);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.searchResultRowActive {
+  border-color: rgba(56, 97, 251, 0.35);
+  background: var(--accent-muted);
+}
+
+.searchResultHead {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.searchResultTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.searchResultId {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-family: ui-monospace, monospace;
 }
 
 /* Avatar bar */
@@ -480,17 +651,23 @@
   line-height: 1.65;
   white-space: pre-wrap;
   word-break: break-word;
-  box-shadow: var(--shadow-sm);
-  transition: border-color var(--duration-fast) var(--ease-out);
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  transition: border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
 }
 
 .chatMsgBubble:hover {
   border-color: var(--border-focus);
 }
 
+.msg_assistant .chatMsgBubble {
+  border-left: 3px solid rgba(56, 97, 251, 0.55);
+  background: linear-gradient(165deg, rgba(14, 22, 40, 0.98) 0%, rgba(10, 16, 28, 0.92) 100%);
+}
+
 .msg_user .chatMsgBubble {
-  background: linear-gradient(135deg, rgba(56, 97, 251, 0.12), rgba(56, 97, 251, 0.06));
-  border-color: rgba(56, 97, 251, 0.2);
+  background: linear-gradient(135deg, rgba(56, 97, 251, 0.16), rgba(56, 97, 251, 0.06));
+  border-color: rgba(56, 97, 251, 0.22);
+  border-left: 1px solid rgba(56, 97, 251, 0.22);
 }
 
 /* Typing indicator */
@@ -521,17 +698,17 @@
 .chatComposerInner {
   display: flex;
   gap: 10px;
-  padding: 8px;
+  padding: 8px 10px;
   border-radius: var(--radius-lg);
-  background: var(--bg-card);
+  background: linear-gradient(180deg, rgba(16, 24, 42, 0.95) 0%, rgba(10, 16, 28, 0.9) 100%);
   border: 1px solid var(--border);
-  box-shadow: var(--shadow-md), 0 0 40px rgba(56, 97, 251, 0.06);
+  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.04);
   transition: border-color var(--duration) var(--ease-out), box-shadow var(--duration) var(--ease-out);
 }
 
 .chatComposerInner:focus-within {
   border-color: var(--border-focus);
-  box-shadow: var(--shadow-md), 0 0 60px rgba(56, 97, 251, 0.12);
+  box-shadow: var(--shadow-md), 0 0 0 1px rgba(56, 97, 251, 0.12), 0 12px 40px rgba(0, 0, 0, 0.35);
 }
 
 .chatInput {
@@ -673,10 +850,11 @@
 }
 
 .detailTitle {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
-  line-height: 1.35;
-  letter-spacing: -0.01em;
+  line-height: 1.32;
+  letter-spacing: -0.02em;
+  color: var(--text);
 }
 
 .detailBadges {
@@ -1148,7 +1326,9 @@
   align-items: center;
   justify-content: center;
   background:
-    radial-gradient(ellipse 80% 60% at 50% 40%, rgba(56, 97, 251, 0.12), transparent),
+    radial-gradient(ellipse 90% 55% at 50% -10%, rgba(56, 97, 251, 0.06), transparent 55%),
+    radial-gradient(ellipse 45% 35% at 100% 100%, rgba(0, 212, 255, 0.035), transparent),
+    linear-gradient(180deg, var(--bg-surface-highlight) 0%, transparent 28%),
     var(--bg-root);
   overflow: hidden;
 }

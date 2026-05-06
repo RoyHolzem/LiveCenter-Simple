@@ -10,4 +10,5 @@ export type {
   XenaActionCategory,
   XenaActionVerb,
   XenaActionEvent,
+  XenaTelecomFocusEvent,
 } from '@/lib/types';

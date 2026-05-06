@@ -21,7 +21,7 @@ export function RightPanel({ visible, selectedRecord, activeView }: RightPanelPr
       {!selectedRecord ? (
         <div className={styles.panelEmpty}>
           <div className={styles.panelEmptyIcon}>&#x25B8;</div>
-          <div>Operational details will appear here when relevant to your conversation</div>
+          <div>No operational record selected.</div>
         </div>
       ) : (
         <>

@@ -1,27 +1,104 @@
 'use client';
 
+import type { TelecomView } from '@/lib/types';
+import type { SearchResultsState } from '../hooks/useCockpitState';
+import { entityKindToTelecomView } from '@/lib/xena-ui-actions';
 import { cn } from '../chat-utils';
+import {
+  severityTone,
+  statusTone,
+} from '@/features/operations/ops-helpers';
 import styles from '../chat-shell.module.css';
 
 interface LeftPanelProps {
   visible: boolean;
-  selectedContext: string | null;
+  contextView: TelecomView;
+  onContextViewChange: (view: TelecomView) => void;
+  searchResults: SearchResultsState;
+  selectedRecordId: string | null;
+  onPickSearchResult: (view: TelecomView, recordId: string) => void;
 }
 
-export function LeftPanel({ visible, selectedContext }: LeftPanelProps) {
+const CONTEXT_TABS: Array<{ key: TelecomView; label: string }> = [
+  { key: 'incidents', label: 'Incidents' },
+  { key: 'events', label: 'Events' },
+  { key: 'planned-works', label: 'Maint.' },
+];
+
+export function LeftPanel({
+  visible,
+  contextView,
+  onContextViewChange,
+  searchResults,
+  selectedRecordId,
+  onPickSearchResult,
+}: LeftPanelProps) {
+  const viewForResults = searchResults ? entityKindToTelecomView(searchResults.entity) : null;
+
   return (
     <aside className={cn(styles.sidePanel, styles.leftPanel, visible && styles.panelVisible)}>
       <div className={styles.panelSection}>
         <div className={styles.panelSectionTitle}>Context</div>
-        {selectedContext ? (
-          <div className={styles.contextCard}>
-            <div className={styles.contextLabel}>{selectedContext}</div>
-            <div className={styles.contextHint}>Xena is focused on this record</div>
+        <div className={styles.contextTabs} role="tablist" aria-label="Operational domain">
+          {CONTEXT_TABS.map(({ key, label }) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={contextView === key}
+              className={cn(styles.contextTab, contextView === key && styles.contextTabActive)}
+              onClick={() => onContextViewChange(key)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {searchResults && viewForResults ? (
+          <div className={styles.searchResultsBlock}>
+            <div className={styles.searchResultsTitle}>
+              {searchResults.entity === 'incident' && `${searchResults.results.length} matching incidents`}
+              {searchResults.entity === 'event' && `${searchResults.results.length} matching events`}
+              {searchResults.entity === 'planned-work' && `${searchResults.results.length} matching planned works`}
+            </div>
+            <ul className={styles.searchResultsList}>
+              {searchResults.results.map((row) => (
+                <li key={row.recordId}>
+                  <button
+                    type="button"
+                    className={cn(
+                      styles.searchResultRow,
+                      selectedRecordId === row.recordId && styles.searchResultRowActive,
+                    )}
+                    onClick={() => onPickSearchResult(viewForResults, row.recordId)}
+                  >
+                    <div className={styles.searchResultHead}>
+                      <span className={cn(styles.sevBadge, styles[`tone_${severityTone(row.severity)}`])}>
+                        {row.severity}
+                      </span>
+                      <span className={cn(styles.statusBadgeChip, styles[`stat_${statusTone(row.status)}`])}>
+                        {row.status.replaceAll('_', ' ')}
+                      </span>
+                    </div>
+                    <div className={styles.searchResultTitle}>{row.title}</div>
+                    <div className={styles.searchResultId}>{row.recordId}</div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : selectedRecordId ? (
+          <div key={selectedRecordId} className={cn(styles.contextCard, styles.contextCardFocused)}>
+            <div className={styles.contextLabel}>{selectedRecordId}</div>
+            <div className={styles.contextHint}>Selected operational record</div>
           </div>
         ) : (
           <div className={styles.panelEmpty}>
             <div className={styles.panelEmptyIcon}>&#x2726;</div>
-            <div>Say &quot;show me incident SEV-001&quot; or ask Xena about any record</div>
+            <div>
+              No operational context loaded yet. Ask the operator to open an incident, event, or planned work—or use
+              the tabs to choose a domain for your next command.
+            </div>
           </div>
         )}
       </div>

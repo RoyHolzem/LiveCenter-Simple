@@ -93,6 +93,15 @@ export function ChatCenter({
 
       {/* Messages */}
       <div className={styles.chatMessages}>
+        {messages.length === 0 && (
+          <div className={styles.chatEmptyState}>
+            <p className={styles.chatEmptyTitle}>Operations cockpit</p>
+            <p className={styles.chatEmptyBody}>
+              Ask the operator to search or open incidents, events, and planned works. Operational panels stay empty
+              until the agent emits structured UI actions.
+            </p>
+          </div>
+        )}
         {messages.map((message, index) => (
           <div
             key={message.id}
@@ -179,7 +188,11 @@ export function ChatCenter({
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={voiceActive ? 'Voice mode active — speak naturally...' : `Ask ${assistantName} anything about your operations...`}
+            placeholder={
+              voiceActive
+                ? 'Voice mode active — speak naturally...'
+                : 'Ask Xena about incidents, events, planned works, customers, sites, or services...'
+            }
             rows={1}
             disabled={voiceActive}
           />
