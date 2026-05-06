@@ -215,6 +215,7 @@ export async function POST(request: Request) {
       // Pipe through the xena_ui injector to emit OPEN_* actions from record IDs
       const seen = new Set<string>();
       const reader = response.body!.getReader();
+      let firstChunk = true;
 
       const injectedStream = new ReadableStream({
         async pull(controller) {
@@ -226,11 +227,16 @@ export async function POST(request: Request) {
 
           const text = new TextDecoder().decode(value, { stream: true });
 
+          // Inject a test xena_ui on the very first chunk to verify frontend wiring
+          if (firstChunk) {
+            firstChunk = false;
+            // No-op: don't inject test event, only inject on real record IDs
+          }
+
           // Split on SSE event boundaries (\n\n)
           const events = text.split('\n\n');
           for (let i = 0; i < events.length; i++) {
             const event = events[i];
-            const isLast = i === events.length - 1;
 
             if (!event.trim()) continue;
 
@@ -263,6 +269,7 @@ export async function POST(request: Request) {
                   type: 'xena_ui',
                   uiActions: [action],
                 });
+                console.log('[chat] Injecting xena_ui:', payload);
                 controller.enqueue(new TextEncoder().encode(`data: ${payload}\n\n`));
               }
             } catch {
