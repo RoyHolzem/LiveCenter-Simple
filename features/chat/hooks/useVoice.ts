@@ -1,7 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { XenaUiAction } from '@/lib/xena-ui-actions';
 import { useAuthToken } from '../../auth/AuthWrapper';
+import { parseSseDataObject } from '../sse-parse';
 
 export type VoiceState = 'disconnected' | 'recording' | 'transcribing' | 'responding' | 'playing' | 'error';
 
@@ -11,6 +13,7 @@ interface UseVoiceOptions {
   onResponseStart?: () => void;
   onResponseDone?: () => void;
   onError?: (error: string) => void;
+  onUiActions?: (actions: XenaUiAction[]) => void;
 }
 
 export function useVoice(opts: UseVoiceOptions = {}) {
@@ -227,11 +230,18 @@ export function useVoice(opts: UseVoiceOptions = {}) {
 
               try {
                 const parsed = JSON.parse(raw);
-                const delta = parsed.choices?.[0]?.delta?.content ?? parsed.choices?.[0]?.message?.content;
-                if (delta) {
-                  fullResponse += delta;
-                  unspokenText += delta;
-                  opts.onAssistantDelta?.(delta);
+                const sseLine = parseSseDataObject(parsed);
+                if (sseLine.kind === 'xena_ui') {
+                  opts.onUiActions?.(sseLine.actions);
+                  continue;
+                }
+                if (sseLine.kind === 'action') {
+                  continue;
+                }
+                if (sseLine.kind === 'delta') {
+                  fullResponse += sseLine.text;
+                  unspokenText += sseLine.text;
+                  opts.onAssistantDelta?.(sseLine.text);
                   flushSentences(false);
                 }
               } catch {

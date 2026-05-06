@@ -24,7 +24,6 @@ interface ModuleDashboardProps {
 export function ModuleDashboard({ view, onBackToXena }: ModuleDashboardProps) {
   const getAuthToken = useAuthToken();
   const [search, setSearch] = useState('');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const {
     records,
@@ -35,7 +34,10 @@ export function ModuleDashboard({ view, onBackToXena }: ModuleDashboardProps) {
     telecomError,
     telecomLoadedAt,
     loadTelecomView,
-  } = useTelecom(view, getAuthToken, search);
+  } = useTelecom(view, getAuthToken, search, {
+    autoLoadOnMount: true,
+    enablePolling: true,
+  });
 
   const meta = VIEW_META.find((v) => v.key === view);
 
