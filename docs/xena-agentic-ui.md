@@ -92,3 +92,27 @@ The LLM should use tools to compute facts; the UI only reflects **`uiActions`** 
 - Use **stable Dynamo `recordId`** strings so `GET /api/telecom?...&recordId=` succeeds.
 - Prefer **`xena_ui`** for all new integrations; keep `telecom_focus` only for backward compatibility.
 - Drive **activity** UX with `SET_AGENT_ACTIVITY` while tools run (e.g. `{ "type": "SET_AGENT_ACTIVITY", "phase": "search", "message": "Xena is searching incidents…" }`), then `CLEAR_AGENT_ACTIVITY` or `CLEAR_CONTEXT` when done.
+
+## 10. Server-side xena_ui injection (chat route)
+
+The Next.js chat API route (`app/api/chat/route.ts`) automatically injects `xena_ui` SSE actions when the **operator's streamed text** contains recognized record IDs. This means:
+
+- The **operator does not need to emit `xena_ui` JSON itself** — it just mentions the record ID in its natural language response.
+- The server-side `createXenaUiInjector()` TransformStream scans each `data:` SSE line for `choices[0].delta.content` matching record ID patterns.
+- When a match is found, it injects an additional `data:` line: `{ "type": "xena_ui", "uiActions": [{ "type": "OPEN_INCIDENT", "recordId": "..." }] }`.
+- Each record ID is emitted at most once per request (deduped via `Set`).
+- Recognized patterns: `INCIDENT-LUX-*`, `EVENT-LUX-*`, `PW-LUX-*`.
+
+**Example SSE stream (what the browser receives):**
+
+```
+data: {"choices":[{"delta":{"content":"The latest incident is INCIDENT-LUX-2026-0090"}}]}
+
+data: {"type":"xena_ui","uiActions":[{"type":"OPEN_INCIDENT","recordId":"INCIDENT-LUX-2026-0090"}]}
+
+data: {"choices":[{"delta":{"content":", a SIP call setup failure in Dudelange."}}]}
+
+data: [DONE]
+```
+
+The frontend's `parseSseDataObject` already handles both operator-emitted and server-injected `xena_ui` lines identically.

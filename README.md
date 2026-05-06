@@ -190,7 +190,7 @@ npm run dev
 
 | Route | Auth | Description |
 |---|---|---|
-| `POST /api/chat` | Cognito JWT | Proxies chat to OpenClaw gateway with SSE streaming |
+| `POST /api/chat` | Cognito JWT | Proxies chat to OpenClaw gateway with SSE streaming; injects `xena_ui` actions when record IDs appear in delta content |
 | `GET /api/telecom?view=incidents\|events\|planned-works` | Cognito JWT | Scans DynamoDB telecom tables |
 | `POST /api/voice/stt` | Cognito JWT | Whisper speech-to-text |
 | `POST /api/voice/tts` | Cognito JWT | GPT-4o-mini text-to-speech |
