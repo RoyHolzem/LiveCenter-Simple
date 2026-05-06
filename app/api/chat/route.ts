@@ -213,10 +213,69 @@ export async function POST(request: Request) {
       }
 
       // Pipe through the xena_ui injector to emit OPEN_* actions from record IDs
-      const injector = createXenaUiInjector();
-      response.body!.pipeTo(injector.writable);
+      const seen = new Set<string>();
+      const reader = response.body!.getReader();
 
-      return new Response(injector.readable, {
+      const injectedStream = new ReadableStream({
+        async pull(controller) {
+          const { done, value } = await reader.read();
+          if (done) {
+            controller.close();
+            return;
+          }
+
+          const text = new TextDecoder().decode(value, { stream: true });
+
+          // Split on SSE event boundaries (\n\n)
+          const events = text.split('\n\n');
+          for (let i = 0; i < events.length; i++) {
+            const event = events[i];
+            const isLast = i === events.length - 1;
+
+            if (!event.trim()) continue;
+
+            // Forward the event
+            controller.enqueue(new TextEncoder().encode(event + '\n\n'));
+
+            // Scan for record IDs in delta content
+            const dataLine = event.split('\n').find((l) => l.startsWith('data: '));
+            if (!dataLine || dataLine === 'data: [DONE]') continue;
+
+            try {
+              const json = JSON.parse(dataLine.slice(6));
+              const content: string =
+                json?.choices?.[0]?.delta?.content ??
+                json?.choices?.[0]?.message?.content ??
+                '';
+              if (!content) continue;
+
+              let match: RegExpExecArray | null;
+              RECORD_ID_RE.lastIndex = 0;
+              while ((match = RECORD_ID_RE.exec(content)) !== null) {
+                const recordId = match[1];
+                if (seen.has(recordId)) continue;
+                seen.add(recordId);
+
+                const action = recordIdToAction(recordId);
+                if (!action) continue;
+
+                const payload = JSON.stringify({
+                  type: 'xena_ui',
+                  uiActions: [action],
+                });
+                controller.enqueue(new TextEncoder().encode(`data: ${payload}\n\n`));
+              }
+            } catch {
+              // Not JSON — skip
+            }
+          }
+        },
+        cancel() {
+          reader.cancel();
+        },
+      });
+
+      return new Response(injectedStream, {
         status: 200,
         headers: responseHeaders,
       });
