@@ -26,6 +26,10 @@ function recordIdToAction(recordId: string): XenaUiAction | null {
  * When a `choices[0].delta.content` chunk contains a recognised record ID,
  * we inject an additional `data:` line with `{ type: "xena_ui", uiActions: [...] }`.
  * Each recordId is emitted at most once per request to avoid duplicates.
+ *
+ * SSE events are separated by blank lines (\n\n). The gateway sends each event as
+ * `data: {json}\n\n`. We must forward the original event's full framing (including
+ * the trailing \n\n) before injecting new events.
  */
 function createXenaUiInjector(): TransformStream<Uint8Array, Uint8Array> {
   const seen = new Set<string>();
@@ -36,18 +40,20 @@ function createXenaUiInjector(): TransformStream<Uint8Array, Uint8Array> {
   return new TransformStream({
     transform(chunk, controller) {
       buffer += decoder.decode(chunk, { stream: true });
-      // Split on newlines but keep the last incomplete fragment
-      const parts = buffer.split('\n');
-      buffer = parts.pop()!;
+      // SSE events are separated by \n\n — split on that boundary
+      const events = buffer.split('\n\n');
+      buffer = events.pop()!; // keep the last incomplete fragment
 
-      for (const line of parts) {
-        // Always forward the original line
-        controller.enqueue(encoder.encode(line + '\n'));
+      for (const event of events) {
+        // Forward the complete SSE event with its terminator
+        controller.enqueue(encoder.encode(event + '\n\n'));
 
-        // Inspect SSE data lines for delta content with record IDs
-        if (!line.startsWith('data: ') || line === 'data: [DONE]') continue;
+        // Find the data: line within this event
+        const dataLine = event.split('\n').find((l) => l.startsWith('data: '));
+        if (!dataLine || dataLine === 'data: [DONE]') continue;
+
         try {
-          const json = JSON.parse(line.slice(6));
+          const json = JSON.parse(dataLine.slice(6));
           const content: string =
             json?.choices?.[0]?.delta?.content ??
             json?.choices?.[0]?.message?.content ??
@@ -68,7 +74,7 @@ function createXenaUiInjector(): TransformStream<Uint8Array, Uint8Array> {
               type: 'xena_ui',
               uiActions: [action],
             });
-            // Inject as its own SSE event (double newline terminates it)
+            // Inject as a separate SSE event with its own \n\n terminator
             controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
           }
         } catch {
