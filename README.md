@@ -1,10 +1,12 @@
 # Xena
 
-**AI Assistant Interface** — a production-grade, voice-enabled chat UI deployed on AWS Amplify with Cognito authentication and a dedicated Operations API.
+**Agentic operations cockpit** — a production-grade, voice-enabled interface deployed on AWS Amplify with Cognito authentication, a dedicated Operations API, and a three-zone UI driven by structured operator actions (not preloaded records).
 
 ## What This Is
 
-Xena is a Next.js 14 app that provides a real-time streaming chat interface to an OpenClaw gateway. It features:
+Xena is a Next.js 14 app that provides a real-time streaming chat interface to an OpenClaw gateway. In **Xena mode**, incidents, events, and planned works are **not** loaded into the side panels until the user engages the operator and the gateway emits validated **`xena_ui`** SSE payloads (see [docs/xena-agentic-ui.md](docs/xena-agentic-ui.md)). The full-screen **Incidents / Events / Maintenance** modules still preload lists for power browsing.
+
+It features:
 
 - **Cognito Authentication** — login/signup with email + password (Google OAuth optional). No one sees the chat without authenticating.
 - **SES Email Delivery** — verification, confirmation, and forgot-password emails sent via Amazon SES.
@@ -22,8 +24,8 @@ Xena is a Next.js 14 app that provides a real-time streaming chat interface to a
 Browser (Next.js)
   ├── /                    → AuthWrapper (Cognito login screen)
   │                          └── ChatShell (post-auth chat UI)
-  ├── /api/chat             → verifies JWT → reads secret → proxies SSE to OpenClaw gateway
-  ├── /api/telecom          → verifies JWT → scans DynamoDB tables (incidents, events, planned-works)
+  ├── /api/chat             → verifies JWT → reads secret → proxies SSE to OpenClaw gateway (token deltas + optional `xena_ui` control lines)
+  ├── /api/telecom          → verifies JWT → DynamoDB scan / optional Get by recordId (JWT-protected browser fetch)
   ├── /api/voice/stt        → verifies JWT → Whisper transcription
   ├── /api/voice/tts        → verifies JWT → GPT-4o-mini TTS
   ├── /api/voice/session    → verifies JWT → OpenAI Realtime client token

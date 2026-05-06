@@ -362,13 +362,135 @@
   color: var(--text-tertiary);
 }
 
+/* ─── Xena column (activity + chat) ─── */
+.chatColumn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.agentActivityBar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 20px;
+  margin: 0 8px;
+  border-radius: var(--radius);
+  background: rgba(56, 97, 251, 0.08);
+  border: 1px solid rgba(56, 97, 251, 0.15);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.agentActivityDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+  animation: dotPulse 1s ease-in-out infinite;
+}
+
+.agentActivityText {
+  flex: 1;
+  line-height: 1.4;
+}
+
 /* ─── Chat Center ─── */
 .chatCenter {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
   position: relative;
+}
+
+.chatEmptyState {
+  max-width: 420px;
+  padding: 8px 0 24px;
+  color: var(--text-secondary);
+}
+
+.chatEmptyTitle {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 10px;
+}
+
+.chatEmptyBody {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.searchResultsBlock {
+  margin-top: 4px;
+}
+
+.searchResultsTitle {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  margin-bottom: 10px;
+}
+
+.searchResultsList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: min(360px, 45vh);
+  overflow-y: auto;
+}
+
+.searchResultRow {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out);
+}
+
+.searchResultRow:hover {
+  border-color: var(--border);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.searchResultRowActive {
+  border-color: rgba(56, 97, 251, 0.35);
+  background: var(--accent-muted);
+}
+
+.searchResultHead {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.searchResultTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.searchResultId {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-family: ui-monospace, monospace;
 }
 
 /* Avatar bar */

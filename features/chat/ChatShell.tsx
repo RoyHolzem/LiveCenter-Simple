@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import type { XenaTelecomFocusEvent } from '@/lib/types';
+import type { XenaUiAction } from '@/lib/xena-ui-actions';
 import { publicConfig } from './chat-config';
 import { useAuthToken } from '../auth/AuthWrapper';
 import { useChat } from './hooks/useChat';
 import { useVoice } from './hooks/useVoice';
 import { useBootSequence } from './hooks/useBootSequence';
 import { useTelecom } from './hooks/useTelecom';
+import { useCockpitState } from './hooks/useCockpitState';
 import { useGitHub } from './hooks/useGitHub';
 import { useModels } from './hooks/useModels';
 import { TopNav, type AppMode } from './components/TopNav';
@@ -16,6 +17,7 @@ import { LeftPanel } from './components/LeftPanel';
 import { RightPanel } from './components/RightPanel';
 import { ModuleDashboard } from './components/ModuleDashboard';
 import { BootScreen } from './components/BootScreen';
+import { AgentActivityBar } from './components/AgentActivityBar';
 
 import type { TelecomView } from '@/lib/types';
 import styles from './chat-shell.module.css';
@@ -37,16 +39,20 @@ export function ChatShell() {
 
   const telecom = useTelecom(contextView, getAuthToken, search, {
     onContextViewChange: setContextView,
+    autoLoadOnMount: false,
+    enablePolling: false,
   });
 
-  const onTelecomFocus = useCallback(
-    (event: XenaTelecomFocusEvent) => {
-      void telecom.focusRecord(event.view, event.recordId);
+  const cockpit = useCockpitState(telecom, setContextView);
+
+  const onUiActions = useCallback(
+    (actions: XenaUiAction[]) => {
+      void cockpit.dispatchUiActions(actions);
     },
-    [telecom],
+    [cockpit],
   );
 
-  const chat = useChat(selectedModel, { onTelecomFocus });
+  const chat = useChat(selectedModel, { onUiActions });
 
   const voice = useVoice({
     onUserTranscript: useCallback((text: string) => {
@@ -69,7 +75,7 @@ export function ChatShell() {
       console.error('[voice]', err);
     }, []),
 
-    onTelecomFocus,
+    onUiActions,
   });
 
   const boot = useBootSequence();
@@ -106,33 +112,41 @@ export function ChatShell() {
           <>
             <LeftPanel
               visible
-              selectedContext={telecom.selectedRecord?.recordId ?? null}
               contextView={contextView}
               onContextViewChange={setContextView}
+              searchResults={cockpit.searchResults}
+              selectedRecordId={telecom.selectedRecord?.recordId ?? null}
+              onPickSearchResult={(view, recordId) => {
+                cockpit.setSearchResults(null);
+                void telecom.focusRecord(view, recordId);
+              }}
             />
 
-            <ChatCenter
-              assistantName={assistantName}
-              assistantInitial={assistantInitial}
-              avatarState={chat.avatarState}
-              statusLabel={chat.statusLabel}
-              messages={chat.messages}
-              draft={chat.draft}
-              setDraft={chat.setDraft}
-              presence={chat.presence}
-              error={chat.error}
-              messagesEndRef={chat.messagesEndRef}
-              textareaRef={chat.textareaRef}
-              handleSubmit={(e) => chat.handleSubmit(e, getAuthToken)}
-              handleKeyDown={chat.handleKeyDown}
-              voiceState={voice.state}
-              voiceError={voice.error}
-              onToggleVoice={voice.toggle}
-              voiceActive={voice.isActive}
-            />
+            <div className={styles.chatColumn}>
+              <AgentActivityBar activity={cockpit.agentActivity} />
+              <ChatCenter
+                assistantName={assistantName}
+                assistantInitial={assistantInitial}
+                avatarState={chat.avatarState}
+                statusLabel={chat.statusLabel}
+                messages={chat.messages}
+                draft={chat.draft}
+                setDraft={chat.setDraft}
+                presence={chat.presence}
+                error={chat.error}
+                messagesEndRef={chat.messagesEndRef}
+                textareaRef={chat.textareaRef}
+                handleSubmit={(e) => chat.handleSubmit(e, getAuthToken)}
+                handleKeyDown={chat.handleKeyDown}
+                voiceState={voice.state}
+                voiceError={voice.error}
+                onToggleVoice={voice.toggle}
+                voiceActive={voice.isActive}
+              />
+            </div>
 
             <RightPanel
-              visible={!!telecom.selectedRecord}
+              visible
               selectedRecord={telecom.selectedRecord}
               activeView={contextView}
             />

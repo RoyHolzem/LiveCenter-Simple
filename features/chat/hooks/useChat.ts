@@ -2,12 +2,14 @@
 
 /**
  * OpenClaw / gateway may inject SSE `data:` JSON lines alongside token deltas:
- * - Focus telecom row: `{ "type": "telecom_focus", "view": "incidents"|"events"|"planned-works", "recordId": "<id>", "label"?: "<optional>" }`
- * - Ops-style action: `{ "type": "action", ... }` (see XenaActionEvent in @/lib/types)
+ * - UI bundle: `{ "type": "xena_ui", "uiActions": [ ... ] }` (see @/lib/xena-ui-actions and docs/xena-agentic-ui.md)
+ * - Legacy focus: `{ "type": "telecom_focus", "view", "recordId" }` (mapped to OPEN_* actions)
+ * - Ops-style: `{ "type": "action", ... }` (XenaActionEvent)
  */
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { AvatarState, ChatMessage, PresenceState, XenaActionEvent, XenaTelecomFocusEvent } from '@/lib/types';
+import type { AvatarState, ChatMessage, PresenceState, XenaActionEvent } from '@/lib/types';
+import type { XenaUiAction } from '@/lib/xena-ui-actions';
 import { makeId } from '../chat-utils';
 import { parseSseDataObject } from '../sse-parse';
 
@@ -15,20 +17,13 @@ const nowIso = () => new Date().toISOString();
 
 export type UseChatOptions = {
   onXenaAction?: (event: XenaActionEvent) => void;
-  onTelecomFocus?: (event: XenaTelecomFocusEvent) => void;
+  onUiActions?: (actions: XenaUiAction[]) => void;
 };
 
 export function useChat(selectedModel: string = 'inceptionlabs/mercury-2', options?: UseChatOptions) {
   const onXenaAction = options?.onXenaAction;
-  const onTelecomFocus = options?.onTelecomFocus;
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: makeId(),
-      role: 'assistant',
-      content: 'Hi Roy. I pulled in the Luxembourg telecom tables and I can help you inspect or explain anything you see here.',
-      createdAt: nowIso(),
-    },
-  ]);
+  const onUiActions = options?.onUiActions;
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [presence, setPresence] = useState<PresenceState>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -205,18 +200,18 @@ export function useChat(selectedModel: string = 'inceptionlabs/mercury-2', optio
 
           try {
             const parsed = JSON.parse(raw);
-            const line = parseSseDataObject(parsed);
-            if (line.kind === 'telecom_focus') {
-              onTelecomFocus?.(line.event);
+            const sseLine = parseSseDataObject(parsed);
+            if (sseLine.kind === 'xena_ui') {
+              onUiActions?.(sseLine.actions);
               continue;
             }
-            if (line.kind === 'action') {
-              onXenaAction?.(line.event);
+            if (sseLine.kind === 'action') {
+              onXenaAction?.(sseLine.event);
               continue;
             }
-            if (line.kind === 'delta') {
+            if (sseLine.kind === 'delta') {
               setPresence('typing');
-              assistantBufferRef.current += line.text;
+              assistantBufferRef.current += sseLine.text;
               const text = assistantBufferRef.current;
               setMessages((current) => current.map((message) => (
                 message.id === assistantMessageId ? { ...message, content: text } : message
@@ -241,7 +236,7 @@ export function useChat(selectedModel: string = 'inceptionlabs/mercury-2', optio
         )
       );
     }
-  }, [draft, messages, presence, selectedModel, onXenaAction, onTelecomFocus]);
+  }, [draft, messages, presence, selectedModel, onXenaAction, onUiActions]);
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {

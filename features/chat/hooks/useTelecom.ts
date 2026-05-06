@@ -36,8 +36,11 @@ const emptyLoadedAt: Record<TelecomView, string | null> = {
 };
 
 export type UseTelecomOptions = {
-  /** When focusing a row from another view (e.g. agent SSE), update Xena shell context. */
   onContextViewChange?: (view: TelecomView) => void;
+  /** When true, fetch active view once on mount / view change (module dashboard). Default false for agentic cockpit. */
+  autoLoadOnMount?: boolean;
+  /** When true, refresh active view on an interval after first load. Default false. */
+  enablePolling?: boolean;
 };
 
 export function useTelecom(
@@ -47,6 +50,8 @@ export function useTelecom(
   options?: UseTelecomOptions,
 ) {
   const onContextViewChange = options?.onContextViewChange;
+  const autoLoadOnMount = options?.autoLoadOnMount ?? false;
+  const enablePolling = options?.enablePolling ?? false;
 
   const [telecomData, setTelecomData] = useState<Record<TelecomView, TelecomRecord[]>>(emptyData);
   const [telecomLoading, setTelecomLoading] = useState<Record<TelecomView, boolean>>(emptyLoading);
@@ -77,13 +82,11 @@ export function useTelecom(
     setTelecomData((prev) => ({ ...prev, [view]: payload.items }));
     setTelecomLoadedAt((prev) => ({ ...prev, [view]: new Date().toISOString() }));
     setSelectedRecordIds((prev) => {
-      let next: string | null;
+      let next: string | null = null;
       if (preferRecordId && payload.items.some((i) => i.recordId === preferRecordId)) {
         next = preferRecordId;
       } else if (prev[view] && payload.items.some((item) => item.recordId === prev[view])) {
         next = prev[view];
-      } else {
-        next = payload.items[0]?.recordId ?? null;
       }
       return { ...prev, [view]: next };
     });
@@ -117,16 +120,25 @@ export function useTelecom(
     [onContextViewChange, loadTelecomView],
   );
 
-  useEffect(() => {
-    void loadTelecomView(activeView);
-  }, [activeView, loadTelecomView]);
+  const clearOperationalContext = useCallback(() => {
+    setTelecomData({ ...emptyData });
+    setSelectedRecordIds({ ...emptySelected });
+    setTelecomLoadedAt({ ...emptyLoadedAt });
+    setTelecomError({ ...emptyErrors });
+  }, []);
 
   useEffect(() => {
+    if (!autoLoadOnMount) return;
+    void loadTelecomView(activeView);
+  }, [activeView, loadTelecomView, autoLoadOnMount]);
+
+  useEffect(() => {
+    if (!enablePolling) return;
     const interval = setInterval(() => {
       void loadTelecomView(activeView, true);
     }, TELECOM_REFRESH_INTERVAL);
     return () => clearInterval(interval);
-  }, [activeView, loadTelecomView]);
+  }, [activeView, loadTelecomView, enablePolling]);
 
   const records = telecomData[activeView];
 
@@ -136,17 +148,10 @@ export function useTelecom(
     return records.filter((record) => buildSearch(record).includes(term));
   }, [records, search]);
 
-  useEffect(() => {
-    if (!filteredRecords.length) return;
-    const selectedId = selectedRecordIds[activeView];
-    if (!selectedId || !filteredRecords.some((record) => record.recordId === selectedId)) {
-      setSelectedRecordIds((prev) => ({ ...prev, [activeView]: filteredRecords[0].recordId }));
-    }
-  }, [activeView, filteredRecords, selectedRecordIds]);
-
   const selectedRecord = useMemo(() => {
     const selectedId = selectedRecordIds[activeView];
-    return filteredRecords.find((record) => record.recordId === selectedId) || filteredRecords[0] || null;
+    if (!selectedId) return null;
+    return filteredRecords.find((record) => record.recordId === selectedId) ?? null;
   }, [activeView, filteredRecords, selectedRecordIds]);
 
   return {
@@ -160,6 +165,7 @@ export function useTelecom(
     telecomLoadedAt,
     loadTelecomView,
     focusRecord,
+    clearOperationalContext,
   };
 }
 

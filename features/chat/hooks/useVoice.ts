@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { XenaTelecomFocusEvent } from '@/lib/types';
+import type { XenaUiAction } from '@/lib/xena-ui-actions';
 import { useAuthToken } from '../../auth/AuthWrapper';
 import { parseSseDataObject } from '../sse-parse';
 
@@ -13,7 +13,7 @@ interface UseVoiceOptions {
   onResponseStart?: () => void;
   onResponseDone?: () => void;
   onError?: (error: string) => void;
-  onTelecomFocus?: (event: XenaTelecomFocusEvent) => void;
+  onUiActions?: (actions: XenaUiAction[]) => void;
 }
 
 export function useVoice(opts: UseVoiceOptions = {}) {
@@ -230,18 +230,18 @@ export function useVoice(opts: UseVoiceOptions = {}) {
 
               try {
                 const parsed = JSON.parse(raw);
-                const line = parseSseDataObject(parsed);
-                if (line.kind === 'telecom_focus') {
-                  opts.onTelecomFocus?.(line.event);
+                const sseLine = parseSseDataObject(parsed);
+                if (sseLine.kind === 'xena_ui') {
+                  opts.onUiActions?.(sseLine.actions);
                   continue;
                 }
-                if (line.kind === 'action') {
+                if (sseLine.kind === 'action') {
                   continue;
                 }
-                if (line.kind === 'delta') {
-                  fullResponse += line.text;
-                  unspokenText += line.text;
-                  opts.onAssistantDelta?.(line.text);
+                if (sseLine.kind === 'delta') {
+                  fullResponse += sseLine.text;
+                  unspokenText += sseLine.text;
+                  opts.onAssistantDelta?.(sseLine.text);
                   flushSentences(false);
                 }
               } catch {
