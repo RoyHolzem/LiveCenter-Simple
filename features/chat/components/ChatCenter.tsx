@@ -1,8 +1,9 @@
 'use client';
 
-import type { ChatMessage, PresenceState } from '@/lib/types';
+import type { ChatMessage, PresenceState, TelecomRecord, TelecomView } from '@/lib/types';
 import type { VoiceState } from '../hooks/useVoice';
 import { cn } from '../chat-utils';
+import { ContextCard } from './ContextCard';
 import styles from '../chat-shell.module.css';
 
 interface ChatCenterProps {
@@ -23,6 +24,8 @@ interface ChatCenterProps {
   voiceError: string | null;
   onToggleVoice: () => void;
   voiceActive: boolean;
+  matchedRecord: TelecomRecord | null;
+  matchedView: TelecomView | null;
 }
 
 export function ChatCenter({
@@ -42,6 +45,8 @@ export function ChatCenter({
   voiceError,
   onToggleVoice,
   voiceActive,
+  matchedRecord,
+  matchedView,
 }: ChatCenterProps) {
   // Determine voice-specific avatar state
   const effectiveAvatarState = voiceActive
@@ -71,6 +76,13 @@ export function ChatCenter({
               ? 'Voice Error'
               : statusLabel
     : statusLabel;
+
+  // Figure out which assistant message the context card should attach to:
+  // the latest assistant message that has content
+  const lastAssistantIdx = [...messages]
+    .map((m, i) => ({ role: m.role, content: m.content, idx: i }))
+    .reverse()
+    .find((m) => m.role === 'assistant' && m.content.trim())?.idx ?? -1;
 
   return (
     <div className={styles.chatCenter}>
@@ -125,6 +137,12 @@ export function ChatCenter({
                   </div>
                 )}
               </div>
+              {/* Inline context card: attach to the latest assistant message */}
+              {matchedRecord && matchedView && index === lastAssistantIdx && (
+                <div className={styles.chatContextCardWrap}>
+                  <ContextCard record={matchedRecord} view={matchedView} compact />
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -189,9 +207,11 @@ export function ChatCenter({
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={
-              voiceActive
-                ? 'Voice mode active — speak naturally...'
-                : 'Ask Xena about incidents, events, planned works, customers, sites, or services...'
+              matchedRecord
+                ? `Follow up on: ${matchedRecord.title.substring(0, 60)}${matchedRecord.title.length > 60 ? '...' : ''}`
+                : voiceActive
+                  ? 'Voice mode active — speak naturally...'
+                  : 'Ask Xena about incidents, events, planned works, customers, sites, or services...'
             }
             rows={1}
             disabled={voiceActive}
@@ -214,7 +234,9 @@ export function ChatCenter({
               : voiceState === 'responding' ? '🧠 Thinking...'
               : voiceState === 'playing' ? '🔊 Speaking...'
               : 'Processing...'
-            : 'Shift + Enter for newline'
+            : matchedRecord
+              ? `📋 Context: ${matchedRecord.recordId}`
+              : 'Shift + Enter for newline'
           }
         </div>
       </form>

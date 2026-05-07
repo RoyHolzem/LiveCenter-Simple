@@ -154,12 +154,22 @@ export function useTelecom(
     return filteredRecords.find((record) => record.recordId === selectedId) ?? null;
   }, [activeView, filteredRecords, selectedRecordIds]);
 
+  /**
+   * Override the active view + selected record from chat context.
+   * Used by useChatContext when the conversation references a record.
+   */
+  const selectRecord = useCallback((view: TelecomView, recordId: string) => {
+    setSelectedRecordIds((prev) => ({ ...prev, [view]: recordId }));
+  }, []);
+
   return {
+    recordsByView: telecomData,
     records,
     filteredRecords,
     selectedRecord,
     selectedRecordIds,
     setSelectedRecordIds,
+    selectRecord,
     telecomLoading,
     telecomError,
     telecomLoadedAt,

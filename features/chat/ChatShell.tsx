@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { XenaUiAction } from '@/lib/xena-ui-actions';
 import { publicConfig } from './chat-config';
 import { useAuthToken } from '../auth/AuthWrapper';
@@ -9,6 +9,7 @@ import { useVoice } from './hooks/useVoice';
 import { useBootSequence } from './hooks/useBootSequence';
 import { useTelecom } from './hooks/useTelecom';
 import { useCockpitState } from './hooks/useCockpitState';
+import { useChatContext } from './hooks/useChatContext';
 import { useGitHub } from './hooks/useGitHub';
 import { useModels } from './hooks/useModels';
 import { TopNav, type AppMode } from './components/TopNav';
@@ -68,7 +69,7 @@ export function ChatShell() {
     }, [chat]),
 
     onResponseDone: useCallback(() => {
-      // no-op, response fully streamed
+      // no-op
     }, []),
 
     onError: useCallback((err: string) => {
@@ -80,12 +81,32 @@ export function ChatShell() {
 
   const boot = useBootSequence();
 
+  // Chat-driven context: match conversation to telecom records
+  const { matchedRecord, matchedView } = useChatContext(
+    chat.messages,
+    telecom.recordsByView,
+  );
+
+  // When a record is matched via chat context, override the active view + selection
+  useEffect(() => {
+    if (matchedRecord && matchedView) {
+      if (matchedView !== contextView) {
+        setContextView(matchedView);
+      }
+      telecom.selectRecord(matchedView, matchedRecord.recordId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchedRecord, matchedView]);
+
+  // The record to show in the right panel: chat context match takes priority
+  const displayRecord = matchedRecord || telecom.selectedRecord;
+
   const isXenaMode = mode === 'xena';
   const isReady = boot.bootState === 'ready';
 
-  return (
-    <div className={styles.shell}>
-      {!isReady ? (
+  if (!isReady) {
+    return (
+      <div className={styles.shell}>
         <BootScreen
           bootState={boot.bootState}
           steps={boot.steps}
@@ -94,8 +115,12 @@ export function ChatShell() {
           assistantName={assistantName}
           assistantInitial={assistantInitial}
         />
-      ) : (
-        <>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.shell}>
       <TopNav
         mode={mode}
         setMode={setMode}
@@ -115,7 +140,7 @@ export function ChatShell() {
               contextView={contextView}
               onContextViewChange={setContextView}
               searchResults={cockpit.searchResults}
-              selectedRecordId={telecom.selectedRecord?.recordId ?? null}
+              selectedRecordId={displayRecord?.recordId ?? telecom.selectedRecord?.recordId ?? null}
               onPickSearchResult={(view, recordId) => {
                 cockpit.setSearchResults(null);
                 void telecom.focusRecord(view, recordId);
@@ -142,13 +167,15 @@ export function ChatShell() {
                 voiceError={voice.error}
                 onToggleVoice={voice.toggle}
                 voiceActive={voice.isActive}
+                matchedRecord={matchedRecord}
+                matchedView={matchedView}
               />
             </div>
 
             <RightPanel
               visible
-              selectedRecord={telecom.selectedRecord}
-              activeView={contextView}
+              selectedRecord={displayRecord}
+              activeView={matchedView || contextView}
             />
           </>
         ) : (
@@ -158,8 +185,6 @@ export function ChatShell() {
           />
         )}
       </div>
-        </>
-      )}
     </div>
   );
 }
