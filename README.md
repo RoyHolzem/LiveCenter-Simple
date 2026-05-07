@@ -12,6 +12,7 @@ It features:
 - **SES Email Delivery** — verification, confirmation, and forgot-password emails sent via Amazon SES.
 - **Server-side Gateway Proxy** — the browser never touches the gateway token. All chat and AWS API calls go through Next.js API routes that verify the Cognito JWT before forwarding. The gateway token is stored in AWS Secrets Manager and fetched at runtime.
 - **Voice Interface** — push-to-talk using Whisper (STT) and GPT-4o-mini TTS. Record → transcribe → chat → speak the response in real-time, sentence by sentence.
+- **Dynamic Chat Context** — the UI automatically surfaces relevant telecom records as you chat. When you mention an incident, event, customer, city, or circuit ID, the right panel and inline context cards update in real-time without waiting for the operator to emit structured actions. Matches by recordId, circuit/fiber/site codes, and fuzzy title/company/location scoring.
 - **Telecom Operations Dashboard** — browse Luxembourg telecom incidents, events, and planned maintenance from DynamoDB, with sortable tables and a focused detail panel.
 - **Operations API** — a dedicated Lambda + API Gateway backend for safe, least-privilege access to operational data (no direct AWS credentials in the app or the LLM).
 - **GitHub Status** — shows connected branch and latest commit SHA in the top nav.
@@ -30,7 +31,22 @@ Browser (Next.js)
   ├── /api/voice/tts        → verifies JWT → GPT-4o-mini TTS
   ├── /api/voice/session    → verifies JWT → OpenAI Realtime client token
   ├── /api/warmup           → verifies JWT → warms Lambda + gateway + operator
+  ├── /api/models           → verifies JWT → lists available gateway models
   └── /api/health           → returns { ok: true }
+
+Chat Context Flow:
+  User message ──→ useChatContext ──→ matches against preloaded telecom records
+    │                                     │
+    ├─ Inline ContextCard (below assistant message)
+    ├─ Right panel (record detail auto-populates)
+    └─ Chat placeholder (adapts to matched record title)
+
+Agentic UI Flow (operator with tools):
+  Operator response ──→ xena_ui SSE lines ──→ useCockpitState
+    │                                          │
+    ├─ OPEN_INCIDENT/EVENT/PLANNED_WORK → focusRecord
+    ├─ SHOW_SEARCH_RESULTS → left panel list
+    └─ SET_AGENT_ACTIVITY → activity bar
 
 AWS Infrastructure (CloudFormation):
   ├── Secrets Manager       → xena/gateway-token, xena/openai-key
@@ -192,6 +208,7 @@ npm run dev
 |---|---|---|
 | `POST /api/chat` | Cognito JWT | Proxies chat to OpenClaw gateway with SSE streaming |
 | `GET /api/telecom?view=incidents\|events\|planned-works` | Cognito JWT | Scans DynamoDB telecom tables |
+| `GET /api/models` | Cognito JWT | Lists available gateway models for model selector |
 | `POST /api/voice/stt` | Cognito JWT | Whisper speech-to-text |
 | `POST /api/voice/tts` | Cognito JWT | GPT-4o-mini text-to-speech |
 | `POST /api/voice/session` | Cognito JWT | OpenAI Realtime client session token |
@@ -245,20 +262,27 @@ npm run dev
 │   │   ├── chat-types.ts
 │   │   ├── chat-utils.ts
 │   │   ├── chat-shell.module.css
+│   │   ├── sse-parse.ts            # SSE line classifier (xena_ui / delta / action)
+│   │   ├── ui-action-dispatcher.ts # Normalizes and applies xena_ui actions
 │   │   ├── components/
+│   │   │   ├── AgentActivityBar.tsx # Operator activity indicator
 │   │   │   ├── BootScreen.tsx      # Startup warmup animation
-│   │   │   ├── ChatCenter.tsx      # Message list + input
+│   │   │   ├── ChatCenter.tsx      # Message list + input + inline context card
 │   │   │   ├── ChatPanel.tsx
-│   │   │   ├── LeftPanel.tsx       # Context panel
+│   │   │   ├── ContextCard.tsx     # Inline record card (severity, status, facts)
+│   │   │   ├── LeftPanel.tsx       # Context panel + search results
 │   │   │   ├── ModuleDashboard.tsx # Incidents/Events/Maintenance views
 │   │   │   ├── OperationsPanel.tsx
 │   │   │   ├── RightPanel.tsx      # Record detail panel
-│   │   │   └── TopNav.tsx          # Navigation + status
+│   │   │   └── TopNav.tsx          # Navigation + model selector + status
 │   │   └── hooks/
 │   │       ├── useBootSequence.ts
 │   │       ├── useChat.ts          # Chat state + streaming
+│   │       ├── useChatContext.ts   # Auto-matches chat messages to telecom records
+│   │       ├── useCockpitState.ts  # Dispatches xena_ui actions to telecom/panels
 │   │       ├── useGitHub.ts
-│   │       ├── useTelecom.ts       # DynamoDB data fetching
+│   │       ├── useModels.ts        # Gateway model list
+│   │       ├── useTelecom.ts       # DynamoDB data fetching + cross-view selection
 │   │       └── useVoice.ts         # Push-to-talk pipeline
 │   └── operations/
 │       ├── ops-helpers.ts

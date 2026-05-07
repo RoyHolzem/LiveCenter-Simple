@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-Xena’s **Xena mode** (three-column cockpit) is an **agentic operations interface**: the human drives intent through chat (and voice); the **Xena Operator** (behind OpenClaw) decides when to call tools and APIs; the **browser** updates navigation, search results, and the detail panel only from **structured `uiActions`**, never from parsing assistant prose.
+Xena's **Xena mode** (three-column cockpit) is an **agentic operations interface**: the human drives intent through chat (and voice); the **Xena Operator** (behind OpenClaw) decides when to call tools and APIs; the **browser** updates navigation, search results, and the detail panel only from **structured `uiActions`**, never from parsing assistant prose.
 
 ## 2. Previous behavior
 
@@ -13,15 +13,23 @@ Xena’s **Xena mode** (three-column cockpit) is an **agentic operations interfa
 ## 3. New behavior
 
 - **Empty chat** until the user sends a message (no seed assistant bubble).
-- **No telecom preload** in Xena mode: `useTelecom` is configured with `autoLoadOnMount: false` and `enablePolling: false` until the agent triggers loads via UI actions (through `focusRecord` / fetches).
-- **Right panel** shows “No operational record selected.” until an `OPEN_*` / `SHOW_*` action (or user picks a search row) loads a record.
-- **Left panel** shows neutral context copy until `SHOW_SEARCH_RESULTS` or a selection exists; context tabs still switch domain (incidents / events / maintenance) for the next command.
+- **Telecom preload**: all three views (incidents, events, planned-works) are eagerly loaded on shell mount so the chat context matcher has data to work with.
+- **Chat-driven context matching** (`useChatContext`): the UI watches both user and assistant messages and matches them against loaded telecom records. Matching uses a 3-tier strategy:
+  1. **Exact recordId** — any message containing a record ID like `INCIDENT-LUX-2026-0053`
+  2. **Circuit / fiber / site codes** — messages referencing specific circuit IDs, fiber IDs, or site codes
+  3. **Fuzzy scoring** — weighted token overlap on title, company, city, operator, summary, and other fields. Best match above threshold wins.
+- When a record is matched:
+  - **Right panel** auto-populates with the matching record's full details
+  - **Active view** switches to the matching record's tab (incidents / events / planned-works)
+  - **Inline ContextCard** renders below the latest assistant message (severity badge, status, timeline, key facts)
+  - **Chat input placeholder** adapts to show the matched record title
+- **Agentic UI actions** (`xena_ui` SSE lines) still work as the primary driver when the operator has tools — they flow through `useCockpitState` → `applyUiActions` → `telecom.focusRecord`. Chat context matching acts as a **fallback** that provides dynamic UI even without operator tool access.
 - **Agent activity** bar appears when the operator emits `SET_AGENT_ACTIVITY` and clears on `CLEAR_AGENT_ACTIVITY` or `CLEAR_CONTEXT`.
 - **Module dashboard** (top nav Incidents / Events / Maintenance) keeps **auto load + polling** for traditional browsing.
 
 ## 4. Agent response contract (logical vs transport)
 
-**Logical turn result** (what the operator “returns” conceptually):
+**Logical turn result** (what the operator "returns" conceptually):
 
 ```json
 {
@@ -38,7 +46,7 @@ Xena’s **Xena mode** (three-column cockpit) is an **agentic operations interfa
 { "type": "xena_ui", "uiActions": [ { "type": "OPEN_INCIDENT", "recordId": "INCIDENT-LUX-2026-0053" } ] }
 ```
 
-If the gateway batches a single JSON object with both `answer` and `uiActions`, it may still send `answer` as streamed text and attach the same `uiActions` array in a final `xena_ui` line—the frontend does not require a duplicate `answer` field once text has streamed.
+If the gateway batches a single JSON object with both `answer` and `uiActions`, it may still send `answer` as streamed text and attach the same `uiActions` array in a final `xena_ui` line-the frontend does not require a duplicate `answer` field once text has streamed.
 
 ## 5. Supported `uiActions`
 
@@ -51,9 +59,9 @@ If the gateway batches a single JSON object with both `answer` and `uiActions`, 
 | `SHOW_EVENT` | `recordId` | MVP: same |
 | `SHOW_PLANNED_WORK` | `recordId` | MVP: same |
 | `SHOW_SEARCH_RESULTS` | `entity`: `incident` \| `event` \| `planned-work`, `results[]` | Left list; each row has `recordId`, `title`, `status`, `severity`. If **exactly one** result, auto-open and clear list |
-| `CLEAR_CONTEXT` | — | Clear telecom in-memory data, selection, search results, activity |
+| `CLEAR_CONTEXT` | - | Clear telecom in-memory data, selection, search results, activity |
 | `SET_AGENT_ACTIVITY` | `phase`, `message` (or message derived from `phase` if only one is set) | Activity bar text |
-| `CLEAR_AGENT_ACTIVITY` | — | Hide activity bar |
+| `CLEAR_AGENT_ACTIVITY` | - | Hide activity bar |
 
 **Legacy:** `{ "type": "telecom_focus", "view": "incidents"|"events"|"planned-works", "recordId": "…" }` is still accepted and mapped to the corresponding `OPEN_*` action.
 
@@ -71,6 +79,55 @@ Types live in [`lib/xena-ui-actions.ts`](../lib/xena-ui-actions.ts). Normalizati
 
 Invalid or unknown action objects are dropped by **`normalizeUiActions`**.
 
+## 6.5 Chat-driven context matching
+
+When the operator **cannot** emit structured `xena_ui` actions (e.g. no tools configured), the UI still provides a dynamic experience through **client-side context matching**.
+
+**Hook:** [`features/chat/hooks/useChatContext.ts`](../features/chat/hooks/useChatContext.ts)
+**Component:** [`features/chat/components/ContextCard.tsx`](../features/chat/components/ContextCard.tsx)
+
+### How it works
+
+1. All three telecom views are **preloaded** on shell mount (incidents, events, planned-works).
+2. `useChatContext` watches the `messages` array (both user and assistant messages) and the `recordsByView` data.
+3. On every message change, it runs a 3-tier matching algorithm:
+   - **Tier 1 — Exact recordId**: message contains a known record ID → instant match
+   - **Tier 2 — Circuit/fiber/site codes**: message contains a known code → instant match
+   - **Tier 3 — Fuzzy scoring**: weighted token overlap across title (×10), summary (×5), company (×6), city (×4), operator (×4), and other fields. Best score above threshold (6) wins.
+4. When matched, the `ChatShell`:
+   - Switches the active view tab to the matching record's category
+   - Calls `telecom.selectRecord()` to update the right panel
+   - Passes the match to `ChatCenter`, which renders an inline `ContextCard` below the latest assistant message
+   - Updates the chat input placeholder to reference the matched record
+
+### ContextCard (inline)
+
+The `ContextCard` renders as a glass-morphism card inside the chat message stream:
+
+```
+┌─────────────────────────────────────┐
+│ Fiber Outage          SEV2  OPEN    │
+│ Fiber cut affecting Luxembourg City │
+│ Start    07 May 2026, 14:30         │
+│ Customer POST Luxembourg            │
+│ Location Luxembourg                  │
+│─────────────────────────────────────│
+│ Root cause    Cable damage           │
+│ ETA           08 May, 08:00          │
+│ Affected      12 customers          │
+└─────────────────────────────────────┘
+```
+
+### Relationship to agentic UI actions
+
+| Scenario | Driver | Mechanism |
+|----------|--------|-----------|
+| Operator has tools + emits `xena_ui` | Agentic actions | `useCockpitState` → `applyUiActions` → `focusRecord` |
+| Operator has no tools (text-only) | Chat context matching | `useChatContext` → fuzzy match → `selectRecord` |
+| Both fire (operator emits action AND chat matches) | Agentic actions take priority | `displayRecord = matchedRecord \|\| telecom.selectedRecord` |
+
+The chat context matcher is a **progressive enhancement** — it works immediately with any operator, and gracefully defers to structured actions when available.
+
 ## 7. Operations API / tool mapping
 
 | Intent | Browser (Next) | Operator / tools (typical) |
@@ -82,9 +139,18 @@ The LLM should use tools to compute facts; the UI only reflects **`uiActions`** 
 
 ## 8. Example user flows
 
-1. **“Open latest incident”** — Operator calls ops API or internal tool → streams short answer → emits `xena_ui` with `OPEN_INCIDENT` and the resolved `recordId` → right panel shows detail, left shows selected id card.
-2. **“Open incident INCIDENT-LUX-2026-0053”** — Same with explicit id.
-3. **“Status of company XYZ”** — Operator searches → emits `SHOW_SEARCH_RESULTS` with multiple rows → user clicks a row → client calls `focusRecord` for that id. If the operator returns a single row, the dispatcher auto-opens and clears the list.
+### Agentic flows (operator with tools)
+
+1. **"Open latest incident"** - Operator calls ops API or internal tool → streams short answer → emits `xena_ui` with `OPEN_INCIDENT` and the resolved `recordId` → right panel shows detail, left shows selected id card.
+2. **"Open incident INCIDENT-LUX-2026-0053"** - Same with explicit id.
+3. **"Status of company XYZ"** - Operator searches → emits `SHOW_SEARCH_RESULTS` with multiple rows → user clicks a row → client calls `focusRecord` for that id. If the operator returns a single row, the dispatcher auto-opens and clears the list.
+
+### Chat context flows (operator without tools)
+
+4. **"What's happening with POST Technologies?"** - User sends message → `useChatContext` scores POST Technologies against all records → matches incident/company → right panel auto-populates, inline ContextCard appears under the operator's text response.
+5. **"Tell me about INCIDENT-LUX-2026-0053"** - Exact recordId match → right panel shows full detail, active view switches to incidents.
+6. **"Status of fiber LUX-FB-0042"** - Circuit/fiber code match → right panel surfaces the matching record.
+7. **"Any issues in Luxembourg City?"** - Fuzzy match on city field → best-scoring record appears in right panel.
 
 ## 9. OpenClaw integration notes
 
