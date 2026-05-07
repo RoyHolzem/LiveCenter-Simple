@@ -26,6 +26,7 @@ export function parseSseDataObject(parsed: unknown): ParsedSseLine {
   if (o.type === 'xena_ui' && Array.isArray(o.uiActions)) {
     const actions = normalizeUiActions(o.uiActions);
     if (actions.length === 0) return { kind: 'skip' };
+    console.log('[sse-parse] xena_ui actions:', JSON.stringify(actions));
     return { kind: 'xena_ui', actions };
   }
 

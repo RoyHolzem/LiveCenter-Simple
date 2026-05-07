@@ -206,7 +206,7 @@ npm run dev
 
 | Route | Auth | Description |
 |---|---|---|
-| `POST /api/chat` | Cognito JWT | Proxies chat to OpenClaw gateway with SSE streaming |
+| `POST /api/chat` | Cognito JWT | Proxies chat to OpenClaw gateway with SSE streaming; injects `xena_ui` actions when record IDs appear in delta content |
 | `GET /api/telecom?view=incidents\|events\|planned-works` | Cognito JWT | Scans DynamoDB telecom tables |
 | `GET /api/models` | Cognito JWT | Lists available gateway models for model selector |
 | `POST /api/voice/stt` | Cognito JWT | Whisper speech-to-text |

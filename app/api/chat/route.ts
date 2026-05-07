@@ -3,9 +3,92 @@ import {
   SecretsManagerClient,
   GetSecretValueCommand,
 } from '@aws-sdk/client-secrets-manager';
+import type { XenaUiAction } from '@/lib/xena-ui-actions';
 
-// Amplify SSR (Lambda) max execution ù 60s for streaming LLM responses
+// Amplify SSR (Lambda) max execution ~ 60s for streaming LLM responses
 export const maxDuration = 60;
+
+// ---------------------------------------------------------------------------
+// SSE stream transform: inject xena_ui actions when record IDs appear in delta
+// ---------------------------------------------------------------------------
+
+const RECORD_ID_RE = /\b(INCIDENT-LUX-\d+|EVENT-LUX-\d+|PW-LUX-\d+)\b/g;
+
+function recordIdToAction(recordId: string): XenaUiAction | null {
+  if (recordId.startsWith('INCIDENT-')) return { type: 'OPEN_INCIDENT', recordId };
+  if (recordId.startsWith('EVENT-')) return { type: 'OPEN_EVENT', recordId };
+  if (recordId.startsWith('PW-')) return { type: 'OPEN_PLANNED_WORK', recordId };
+  return null;
+}
+
+/**
+ * Create a TransformStream that parses the SSE stream from the gateway.
+ * When a `choices[0].delta.content` chunk contains a recognised record ID,
+ * we inject an additional `data:` line with `{ type: "xena_ui", uiActions: [...] }`.
+ * Each recordId is emitted at most once per request to avoid duplicates.
+ *
+ * SSE events are separated by blank lines (\n\n). The gateway sends each event as
+ * `data: {json}\n\n`. We must forward the original event's full framing (including
+ * the trailing \n\n) before injecting new events.
+ */
+function createXenaUiInjector(): TransformStream<Uint8Array, Uint8Array> {
+  const seen = new Set<string>();
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  let buffer = '';
+
+  return new TransformStream({
+    transform(chunk, controller) {
+      buffer += decoder.decode(chunk, { stream: true });
+      // SSE events are separated by \n\n — split on that boundary
+      const events = buffer.split('\n\n');
+      buffer = events.pop()!; // keep the last incomplete fragment
+
+      for (const event of events) {
+        // Forward the complete SSE event with its terminator
+        controller.enqueue(encoder.encode(event + '\n\n'));
+
+        // Find the data: line within this event
+        const dataLine = event.split('\n').find((l) => l.startsWith('data: '));
+        if (!dataLine || dataLine === 'data: [DONE]') continue;
+
+        try {
+          const json = JSON.parse(dataLine.slice(6));
+          const content: string =
+            json?.choices?.[0]?.delta?.content ??
+            json?.choices?.[0]?.message?.content ??
+            '';
+          if (!content) continue;
+
+          let match: RegExpExecArray | null;
+          RECORD_ID_RE.lastIndex = 0;
+          while ((match = RECORD_ID_RE.exec(content)) !== null) {
+            const recordId = match[1];
+            if (seen.has(recordId)) continue;
+            seen.add(recordId);
+
+            const action = recordIdToAction(recordId);
+            if (!action) continue;
+
+            const payload = JSON.stringify({
+              type: 'xena_ui',
+              uiActions: [action],
+            });
+            // Inject as a separate SSE event with its own \n\n terminator
+            controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
+          }
+        } catch {
+          // Not JSON — skip
+        }
+      }
+    },
+    flush(controller) {
+      if (buffer) {
+        controller.enqueue(encoder.encode(buffer));
+      }
+    },
+  });
+}
 
 const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || '';
 const CHAT_PATH = process.env.NEXT_PUBLIC_GATEWAY_CHAT_PATH || '/v1/chat/completions';
@@ -129,7 +212,77 @@ export async function POST(request: Request) {
         responseHeaders['x-actual-model'] = actualModel;
       }
 
-      return new Response(response.body, {
+      // Pipe through the xena_ui injector to emit OPEN_* actions from record IDs
+      const seen = new Set<string>();
+      const reader = response.body!.getReader();
+      let firstChunk = true;
+
+      const injectedStream = new ReadableStream({
+        async pull(controller) {
+          const { done, value } = await reader.read();
+          if (done) {
+            controller.close();
+            return;
+          }
+
+          const text = new TextDecoder().decode(value, { stream: true });
+
+          // Inject a test xena_ui on the very first chunk to verify frontend wiring
+          if (firstChunk) {
+            firstChunk = false;
+            // No-op: don't inject test event, only inject on real record IDs
+          }
+
+          // Split on SSE event boundaries (\n\n)
+          const events = text.split('\n\n');
+          for (let i = 0; i < events.length; i++) {
+            const event = events[i];
+
+            if (!event.trim()) continue;
+
+            // Forward the event
+            controller.enqueue(new TextEncoder().encode(event + '\n\n'));
+
+            // Scan for record IDs in delta content
+            const dataLine = event.split('\n').find((l) => l.startsWith('data: '));
+            if (!dataLine || dataLine === 'data: [DONE]') continue;
+
+            try {
+              const json = JSON.parse(dataLine.slice(6));
+              const content: string =
+                json?.choices?.[0]?.delta?.content ??
+                json?.choices?.[0]?.message?.content ??
+                '';
+              if (!content) continue;
+
+              let match: RegExpExecArray | null;
+              RECORD_ID_RE.lastIndex = 0;
+              while ((match = RECORD_ID_RE.exec(content)) !== null) {
+                const recordId = match[1];
+                if (seen.has(recordId)) continue;
+                seen.add(recordId);
+
+                const action = recordIdToAction(recordId);
+                if (!action) continue;
+
+                const payload = JSON.stringify({
+                  type: 'xena_ui',
+                  uiActions: [action],
+                });
+                console.log('[chat] Injecting xena_ui:', payload);
+                controller.enqueue(new TextEncoder().encode(`data: ${payload}\n\n`));
+              }
+            } catch {
+              // Not JSON — skip
+            }
+          }
+        },
+        cancel() {
+          reader.cancel();
+        },
+      });
+
+      return new Response(injectedStream, {
         status: 200,
         headers: responseHeaders,
       });
