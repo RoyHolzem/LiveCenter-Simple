@@ -81,6 +81,16 @@ export function ChatShell() {
 
   const boot = useBootSequence();
 
+  // Preload all telecom views on mount so the chat context matcher has data
+  useEffect(() => {
+    const views: TelecomView[] = ['incidents', 'events', 'planned-works'];
+    for (const view of views) {
+      void telecom.loadTelecomView(view, true);
+    }
+    // Only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Chat-driven context: match conversation to telecom records
   const { matchedRecord, matchedView } = useChatContext(
     chat.messages,
