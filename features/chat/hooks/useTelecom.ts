@@ -9,30 +9,35 @@ const emptyData: Record<TelecomView, TelecomRecord[]> = {
   incidents: [],
   events: [],
   'planned-works': [],
+  orders: [],
 };
 
 const emptyLoading: Record<TelecomView, boolean> = {
   incidents: false,
   events: false,
   'planned-works': false,
+  orders: false,
 };
 
 const emptyErrors: Record<TelecomView, string | null> = {
   incidents: null,
   events: null,
   'planned-works': null,
+  orders: null,
 };
 
 const emptySelected: Record<TelecomView, string | null> = {
   incidents: null,
   events: null,
   'planned-works': null,
+  orders: null,
 };
 
 const emptyLoadedAt: Record<TelecomView, string | null> = {
   incidents: null,
   events: null,
   'planned-works': null,
+  orders: null,
 };
 
 export type UseTelecomOptions = {

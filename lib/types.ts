@@ -16,7 +16,7 @@ export type AvatarState = 'idle' | 'listening' | 'thinking' | 'speaking' | 'erro
 
 /* ─── Telecom types ─── */
 
-export type TelecomView = 'incidents' | 'events' | 'planned-works';
+export type TelecomView = 'incidents' | 'events' | 'planned-works' | 'orders';
 
 export type LabeledValue = {
   label: string;

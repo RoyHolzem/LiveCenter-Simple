@@ -1,5 +1,5 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, GetCommand, ScanCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/cognito-jwt';
 import type { LabeledValue, TelecomApiResponse, TelecomRecord, TelecomView } from '@/lib/types';
@@ -14,6 +14,7 @@ const tableNames: Record<TelecomView, string> = {
   incidents: process.env.TELECOM_INCIDENTS_TABLE_NAME || 'roy-telecom-incidents-lux',
   events: process.env.TELECOM_EVENTS_TABLE_NAME || 'roy-telecom-events-lux',
   'planned-works': process.env.TELECOM_PLANNED_WORKS_TABLE_NAME || 'roy-telecom-planned-works-lux',
+  orders: process.env.TELECOM_ORDERS_TABLE_NAME || 'roy-telecom-orders-lux',
 };
 
 const client = DynamoDBDocumentClient.from(
@@ -56,8 +57,17 @@ const workStatusOrder: Record<string, number> = {
   POSTPONED: 5,
 };
 
+const orderStatusOrder: Record<string, number> = {
+  NEW: 0,
+  ACKNOWLEDGED: 1,
+  IN_PROGRESS: 2,
+  PENDING_INFO: 3,
+  COMPLETED: 4,
+  CANCELLED: 5,
+};
+
 function parseView(value: string | null): TelecomView | null {
-  if (value === 'incidents' || value === 'events' || value === 'planned-works') {
+  if (value === 'incidents' || value === 'events' || value === 'planned-works' || value === 'orders') {
     return value;
   }
   return null;
@@ -243,9 +253,64 @@ function normalizePlannedWork(item: RawItem): TelecomRecord {
   };
 }
 
+function normalizeOrder(item: RawItem): TelecomRecord {
+  return {
+    recordId: toText(item.recordId),
+    entityType: 'order',
+    title: toText(item.title),
+    summary: toText(item.summary),
+    status: toText(item.status),
+    severity: toText(item.severity),
+    priority: toText(item.priority),
+    typeCode: toText(item.orderType),
+    companyName: toText(item.companyName),
+    customerName: toText(item.customerName),
+    customerContactName: toText(item.customerContactName),
+    customerEmail: toText(item.customerEmail),
+    customerPhone: toText(item.customerPhone),
+    city: toText(item.city),
+    networkRegion: toText(item.networkRegion),
+    networkCountry: toText(item.networkCountry),
+    operatorName: toText(item.operatorName),
+    serviceType: toText(item.serviceType),
+    networkSegment: toText(item.networkSegment),
+    fiberId: toText(item.fiberId),
+    circuitId: toText(item.circuitId),
+    siteCode: toText(item.siteCode),
+    startTime: toIso(item.startTime),
+    endTime: typeof item.endTime === 'string' ? item.endTime : undefined,
+    createdAt: toIso(item.createdAt),
+    updatedAt: toIso(item.updatedAt),
+    customerText: toText(item.customerText),
+    highlights: facts([
+      ['Order type', item.orderType],
+      ['Product', item.productType],
+      ['Quantity', item.quantity],
+      ['Delivery date', item.requestedDeliveryDate],
+      ['Source', item.orderSource],
+    ]),
+    facts: facts([
+      ['Operator', item.operatorName],
+      ['Service', item.serviceType],
+      ['Segment', item.networkSegment],
+      ['Site code', item.siteCode],
+      ['Fiber ID', item.fiberId],
+      ['Circuit ID', item.circuitId],
+      ['Assigned to', item.assignedTo],
+      ['Delivery address', item.deliveryAddress],
+      ['Customer contact', item.customerContactName],
+      ['Customer email', item.customerEmail],
+      ['Customer phone', item.customerPhone],
+      ['Internal notes', item.internalNotes],
+      ['Updated', item.updatedAt],
+    ]),
+  };
+}
+
 function normalize(view: TelecomView, item: RawItem): TelecomRecord {
   if (view === 'incidents') return normalizeIncident(item);
   if (view === 'events') return normalizeEvent(item);
+  if (view === 'orders') return normalizeOrder(item);
   return normalizePlannedWork(item);
 }
 
@@ -267,6 +332,14 @@ function sortRecords(view: TelecomView, items: TelecomRecord[]) {
 
     if (view === 'events') {
       const statusDelta = (eventStatusOrder[left.status] ?? 99) - (eventStatusOrder[right.status] ?? 99);
+      if (statusDelta !== 0) return statusDelta;
+      const severityDelta = (severityOrder[left.severity] ?? 99) - (severityOrder[right.severity] ?? 99);
+      if (severityDelta !== 0) return severityDelta;
+      return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime();
+    }
+
+    if (view === 'orders') {
+      const statusDelta = (orderStatusOrder[left.status] ?? 99) - (orderStatusOrder[right.status] ?? 99);
       if (statusDelta !== 0) return statusDelta;
       const severityDelta = (severityOrder[left.severity] ?? 99) - (severityOrder[right.severity] ?? 99);
       if (severityDelta !== 0) return severityDelta;
@@ -332,5 +405,201 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to load telecom records';
     return NextResponse.json({ ok: false, view, items: [], count: 0, error: message } satisfies TelecomApiResponse, { status: 500 });
+  }
+}
+
+/* ─── Create record (POST) ─── */
+
+const VALID_STATUSES: Record<TelecomView, string[]> = {
+  incidents: ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS', 'MONITORING', 'RESOLVED', 'CLOSED'],
+  events: ['ACTIVE', 'MONITORING', 'INFO', 'COMPLETED', 'CLOSED'],
+  'planned-works': ['PLANNED', 'APPROVED', 'CUSTOMER_NOTIFIED', 'READY', 'IN_EXECUTION', 'COMPLETED', 'CANCELLED', 'POSTPONED'],
+  orders: ['NEW', 'ACKNOWLEDGED', 'IN_PROGRESS', 'PENDING_INFO', 'COMPLETED', 'CANCELLED'],
+};
+
+const EDITABLE_FIELDS: Record<TelecomView, string[]> = {
+  incidents: [
+    'title', 'summary', 'status', 'severity', 'priority',
+    'operatorName', 'serviceType', 'networkSegment', 'city',
+    'networkRegion', 'networkCountry', 'companyName', 'customerName',
+    'customerContactName', 'customerEmail', 'customerPhone',
+    'fiberId', 'circuitId', 'siteCode', 'endTime',
+    'incidentType', 'affectedCustomers', 'affectedSites',
+    'rootCause', 'etaText', 'vendorReference', 'maintenanceReference',
+    'latestAction', 'packetLossPct', 'latencyMs', 'customerText',
+  ],
+  events: [
+    'title', 'summary', 'status', 'severity', 'priority',
+    'operatorName', 'serviceType', 'networkSegment', 'city',
+    'networkRegion', 'networkCountry', 'companyName', 'customerName',
+    'customerContactName', 'customerEmail', 'customerPhone',
+    'fiberId', 'circuitId', 'siteCode', 'endTime',
+    'eventType', 'eventScope', 'visibility', 'notifiedCustomers',
+    'communicationChannel', 'nextUpdateAt', 'customerText',
+  ],
+  'planned-works': [
+    'title', 'summary', 'status', 'severity', 'priority',
+    'operatorName', 'serviceType', 'networkSegment', 'city',
+    'networkRegion', 'networkCountry', 'companyName', 'customerName',
+    'customerContactName', 'customerEmail', 'customerPhone',
+    'fiberId', 'circuitId', 'siteCode', 'endTime',
+    'plannedWorkType', 'changeRisk', 'approvalState',
+    'expectedImpact', 'expectedDowntimeMinutes', 'maintenanceWindowStart',
+    'maintenanceWindowEnd', 'implementationPartner', 'rollbackPlan',
+    'maintenanceReference', 'customerText',
+  ],
+  orders: [
+    'title', 'summary', 'status', 'severity', 'priority',
+    'operatorName', 'serviceType', 'networkSegment', 'city',
+    'networkRegion', 'networkCountry', 'companyName', 'customerName',
+    'customerContactName', 'customerEmail', 'customerPhone',
+    'fiberId', 'circuitId', 'siteCode', 'endTime',
+    'orderType', 'productType', 'quantity', 'deliveryAddress',
+    'requestedDeliveryDate', 'orderSource', 'assignedTo',
+    'internalNotes', 'customerText',
+  ],
+};
+
+function generateRecordId(view: TelecomView): string {
+  const prefix: Record<TelecomView, string> = {
+    incidents: 'INCIDENT-LUX',
+    events: 'EVENT-LUX',
+    'planned-works': 'PW-LUX',
+    orders: 'ORDER-LUX',
+  };
+  const year = new Date().getFullYear();
+  const seq = String(Math.floor(Math.random() * 9999) + 1).padStart(4, '0');
+  return `${prefix[view]}-${year}-${seq}`;
+}
+
+export async function POST(request: NextRequest) {
+  const authHeader = request.headers.get('Authorization');
+  const user = await verifyToken(authHeader);
+  if (!user) {
+    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const view = parseView(request.nextUrl.searchParams.get('view'));
+  if (!view) {
+    return NextResponse.json({ ok: false, error: 'Invalid view' }, { status: 400 });
+  }
+
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ ok: false, error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  if (!body.title || !body.status || !body.severity) {
+    return NextResponse.json({ ok: false, error: 'Missing required fields: title, status, severity' }, { status: 400 });
+  }
+
+  const validStatuses = VALID_STATUSES[view];
+  if (body.status && !validStatuses.includes(body.status as string)) {
+    return NextResponse.json({ ok: false, error: `Invalid status '${body.status}'. Valid: ${validStatuses.join(', ')}` }, { status: 400 });
+  }
+
+  const now = new Date().toISOString();
+  const recordId = (body.recordId as string) || generateRecordId(view);
+
+  const allowed = EDITABLE_FIELDS[view];
+  const item: Record<string, unknown> = { recordId, createdAt: now, updatedAt: now, startTime: now };
+  for (const field of allowed) {
+    if (body[field] !== undefined && body[field] !== null) {
+      item[field] = body[field];
+    }
+  }
+
+  try {
+    await client.send(new PutCommand({ TableName: tableNames[view], Item: item }));
+    return NextResponse.json({ ok: true, recordId, item: normalize(view, item as RawItem) }, { status: 201 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to create record';
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  const authHeader = request.headers.get('Authorization');
+  const user = await verifyToken(authHeader);
+  if (!user) {
+    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const view = parseView(request.nextUrl.searchParams.get('view'));
+  if (!view) {
+    return NextResponse.json({ ok: false, error: 'Invalid view' }, { status: 400 });
+  }
+
+  const recordId = request.nextUrl.searchParams.get('recordId')?.trim();
+  if (!recordId) {
+    return NextResponse.json({ ok: false, error: 'Missing recordId' }, { status: 400 });
+  }
+
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ ok: false, error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  const validStatuses = VALID_STATUSES[view];
+  if (body.status && !validStatuses.includes(body.status as string)) {
+    return NextResponse.json({ ok: false, error: `Invalid status '${body.status}'. Valid: ${validStatuses.join(', ')}` }, { status: 400 });
+  }
+
+  // Verify record exists
+  try {
+    const existing = await client.send(new GetCommand({ TableName: tableNames[view], Key: { recordId } }));
+    if (!existing.Item) {
+      return NextResponse.json({ ok: false, error: `Record ${recordId} not found` }, { status: 404 });
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to check record';
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+  }
+
+  const allowed = EDITABLE_FIELDS[view];
+  const updates: Record<string, unknown> = {};
+  for (const field of allowed) {
+    if (body[field] !== undefined) {
+      updates[field] = body[field];
+    }
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ ok: false, error: 'No valid fields to update' }, { status: 400 });
+  }
+
+  updates.updatedAt = new Date().toISOString();
+
+  const setClauses: string[] = [];
+  const attrNames: Record<string, string> = {};
+  const attrValues: Record<string, unknown> = {};
+  let idx = 0;
+  for (const [key, value] of Object.entries(updates)) {
+    idx++;
+    const nameKey = `#f${idx}`;
+    const valKey = `:v${idx}`;
+    setClauses.push(`${nameKey} = ${valKey}`);
+    attrNames[nameKey] = key;
+    attrValues[valKey] = value;
+  }
+
+  try {
+    await client.send(new UpdateCommand({
+      TableName: tableNames[view],
+      Key: { recordId },
+      UpdateExpression: `SET ${setClauses.join(', ')}`,
+      ExpressionAttributeNames: attrNames,
+      ExpressionAttributeValues: attrValues,
+    }));
+
+    const updated = await client.send(new GetCommand({ TableName: tableNames[view], Key: { recordId } }));
+    return NextResponse.json({ ok: true, recordId, item: normalize(view, updated.Item as RawItem) });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to update record';
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }

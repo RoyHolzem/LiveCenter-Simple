@@ -12,6 +12,7 @@ Globals:
         INCIDENTS_TABLE: roy-telecom-incidents-lux
         EVENTS_TABLE: roy-telecom-events-lux
         PLANNED_WORKS_TABLE: roy-telecom-planned-works-lux
+        ORDERS_TABLE: roy-telecom-orders-lux
 
 Resources:
   XenaOpsFunction:
@@ -20,20 +21,24 @@ Resources:
       FunctionName: xena-ops-api
       Handler: index.handler
       CodeUri: src/
-      Description: Xena Operations API — reads telecom DynamoDB tables
+      Description: Xena Operations API — CRUD for telecom DynamoDB tables
       Policies:
         - Statement:
-            Sid: XenaOpsDynamoDBRead
+            Sid: XenaOpsDynamoDBCrud
             Effect: Allow
             Action:
               - dynamodb:GetItem
               - dynamodb:Query
               - dynamodb:Scan
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
             Resource:
               - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/roy-telecom-events-lux
               - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/roy-telecom-incidents-lux
               - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/roy-telecom-planned-works-lux
+              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/roy-telecom-orders-lux
       Events:
+        # ─── GET (read) ───
         IncidentsLatest:
           Type: HttpApi
           Properties:
@@ -64,3 +69,55 @@ Resources:
           Properties:
             Path: /planned-works/open
             Method: GET
+        OrdersLatest:
+          Type: HttpApi
+          Properties:
+            Path: /orders/latest
+            Method: GET
+        OrdersOpen:
+          Type: HttpApi
+          Properties:
+            Path: /orders/open
+            Method: GET
+        # ─── POST (create) ───
+        CreateIncident:
+          Type: HttpApi
+          Properties:
+            Path: /incidents
+            Method: POST
+        CreateEvent:
+          Type: HttpApi
+          Properties:
+            Path: /events
+            Method: POST
+        CreatePlannedWork:
+          Type: HttpApi
+          Properties:
+            Path: /planned-works
+            Method: POST
+        CreateOrder:
+          Type: HttpApi
+          Properties:
+            Path: /orders
+            Method: POST
+        # ─── PUT (update) ───
+        UpdateIncident:
+          Type: HttpApi
+          Properties:
+            Path: /incidents/{recordId}
+            Method: PUT
+        UpdateEvent:
+          Type: HttpApi
+          Properties:
+            Path: /events/{recordId}
+            Method: PUT
+        UpdatePlannedWork:
+          Type: HttpApi
+          Properties:
+            Path: /planned-works/{recordId}
+            Method: PUT
+        UpdateOrder:
+          Type: HttpApi
+          Properties:
+            Path: /orders/{recordId}
+            Method: PUT

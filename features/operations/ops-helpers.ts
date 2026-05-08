@@ -42,6 +42,7 @@ export function severityTone(severity: string) {
 export function summaryLabel(view: TelecomView) {
   if (view === 'incidents') return 'Open / live';
   if (view === 'events') return 'Active updates';
+  if (view === 'orders') return 'Active orders';
   return 'Upcoming windows';
 }
 
@@ -51,6 +52,8 @@ export function summaryValue(view: TelecomView, records: TelecomRecord[]) {
       ? new Set(['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS', 'MONITORING'])
       : view === 'events'
         ? new Set(['INFO', 'ACTIVE', 'MONITORING'])
-        : new Set(['PLANNED', 'APPROVED', 'CUSTOMER_NOTIFIED', 'READY', 'IN_EXECUTION']);
+        : view === 'orders'
+          ? new Set(['NEW', 'ACKNOWLEDGED', 'IN_PROGRESS', 'PENDING_INFO'])
+          : new Set(['PLANNED', 'APPROVED', 'CUSTOMER_NOTIFIED', 'READY', 'IN_EXECUTION']);
   return records.filter((record) => activeStatuses.has(record.status)).length;
 }
