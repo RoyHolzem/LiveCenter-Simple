@@ -5,7 +5,7 @@
 
 import type { TelecomView } from '@/lib/types';
 
-export type XenaEntityKind = 'incident' | 'event' | 'planned-work';
+export type XenaEntityKind = 'incident' | 'event' | 'planned-work' | 'order';
 
 export type XenaSearchResultRow = {
   recordId: string;
@@ -18,9 +18,11 @@ export type XenaUiAction =
   | { type: 'OPEN_INCIDENT'; recordId: string }
   | { type: 'OPEN_EVENT'; recordId: string }
   | { type: 'OPEN_PLANNED_WORK'; recordId: string }
+  | { type: 'OPEN_ORDER'; recordId: string }
   | { type: 'SHOW_INCIDENT'; recordId: string }
   | { type: 'SHOW_EVENT'; recordId: string }
   | { type: 'SHOW_PLANNED_WORK'; recordId: string }
+  | { type: 'SHOW_ORDER'; recordId: string }
   | { type: 'SHOW_SEARCH_RESULTS'; entity: XenaEntityKind; results: XenaSearchResultRow[] }
   | { type: 'CLEAR_CONTEXT' }
   | { type: 'SET_AGENT_ACTIVITY'; phase: string; message: string }
@@ -30,6 +32,7 @@ export function entityKindToTelecomView(entity: string): TelecomView | null {
   if (entity === 'incident') return 'incidents';
   if (entity === 'event') return 'events';
   if (entity === 'planned-work') return 'planned-works';
+  if (entity === 'order') return 'orders';
   return null;
 }
 
@@ -44,6 +47,9 @@ export function openActionToView(action: XenaUiAction): TelecomView | null {
     case 'OPEN_PLANNED_WORK':
     case 'SHOW_PLANNED_WORK':
       return 'planned-works';
+    case 'OPEN_ORDER':
+    case 'SHOW_ORDER':
+      return 'orders';
     default:
       return null;
   }
@@ -54,9 +60,11 @@ export function openActionRecordId(action: XenaUiAction): string | null {
     case 'OPEN_INCIDENT':
     case 'OPEN_EVENT':
     case 'OPEN_PLANNED_WORK':
+    case 'OPEN_ORDER':
     case 'SHOW_INCIDENT':
     case 'SHOW_EVENT':
     case 'SHOW_PLANNED_WORK':
+    case 'SHOW_ORDER':
       return action.recordId;
     default:
       return null;

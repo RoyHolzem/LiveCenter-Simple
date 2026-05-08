@@ -12,12 +12,13 @@ export const maxDuration = 60;
 // SSE stream transform: inject xena_ui actions when record IDs appear in delta
 // ---------------------------------------------------------------------------
 
-const RECORD_ID_RE = /\b(INCIDENT-LUX-\d+|EVENT-LUX-\d+|PW-LUX-\d+)\b/g;
+const RECORD_ID_RE = /\b(INCIDENT-LUX-\d+|EVENT-LUX-\d+|PW-LUX-\d+|ORDER-LUX-\d+)\b/g;
 
 function recordIdToAction(recordId: string): XenaUiAction | null {
   if (recordId.startsWith('INCIDENT-')) return { type: 'OPEN_INCIDENT', recordId };
   if (recordId.startsWith('EVENT-')) return { type: 'OPEN_EVENT', recordId };
   if (recordId.startsWith('PW-')) return { type: 'OPEN_PLANNED_WORK', recordId };
+  if (recordId.startsWith('ORDER-')) return { type: 'OPEN_ORDER', recordId };
   return null;
 }
 
@@ -173,6 +174,7 @@ export async function POST(request: Request) {
           model: body.model || 'openclaw/operator',
           stream: true,
           messages: body.messages,
+          user: user.sub,
         }),
         signal: controller.signal,
       });
