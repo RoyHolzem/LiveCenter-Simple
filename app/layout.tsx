@@ -10,8 +10,11 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'Xena',
-  description: 'AI Assistant Interface with Cognito authentication.',
+  title: 'Xena — AI Command Center',
+  description: 'Agentic operations platform. Real-time AI-powered telecom operations with live streaming chat, automated incident management, and enterprise security.',
+  icons: {
+    icon: '/favicon.png',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
