@@ -158,6 +158,7 @@ export function LandingPage({ onAuthenticated }: { onAuthenticated: () => void }
               <div className={styles.demoNavUrl}>app.xena.lu</div>
             </div>
             <div className={styles.demoBody}>
+              <DemoActivityStrand />
               <div className={styles.demoChat}>
                 <div className={styles.demoMsgUser}>
                   <div className={styles.demoMsgAvatar}>R</div>
@@ -167,15 +168,15 @@ export function LandingPage({ onAuthenticated }: { onAuthenticated: () => void }
                   </div>
                 </div>
                 <div className={styles.demoMsgAgent}>
-                  <div className={styles.demoMsgAvatar}>🔧</div>
+                  <div className={styles.demoMsgAvatar}>X</div>
                   <div className={styles.demoMsgContent}>
-                    <div className={styles.demoMsgRole}>Operator</div>
+                    <div className={styles.demoMsgRole}>Xena</div>
                     <div className={styles.demoMsgBubble}>
                       <TypingText text="The Remich incident is INCIDENT-LUX-2026-0036 — an ONU failure at the customer handoff. It's currently OPEN with SEV4 severity. The affected service is FTTH in the Remich area." />
                     </div>
                     <div className={styles.demoContextCard}>
                       <div className={styles.demoCardHeader}>
-                        <span className={styles.demoCardType}>Incident</span>
+                        <span className={styles.demoCardType}>Incident · INCIDENT-LUX-2026-0036</span>
                         <div className={styles.demoCardBadges}>
                           <span className={styles.demoBadgeSev}>SEV4</span>
                           <span className={styles.demoBadgeStatus}>OPEN</span>
@@ -183,9 +184,9 @@ export function LandingPage({ onAuthenticated }: { onAuthenticated: () => void }
                       </div>
                       <div className={styles.demoCardTitle}>ONU failure at customer handoff in Remich</div>
                       <div className={styles.demoCardMeta}>
-                        <span>📍 Remich</span>
-                        <span>🔗 FTTH</span>
-                        <span>🕐 2h ago</span>
+                        <span>Remich · LU</span>
+                        <span>FTTH</span>
+                        <span>2h ago</span>
                       </div>
                     </div>
                   </div>
@@ -322,6 +323,27 @@ export function LandingPage({ onAuthenticated }: { onAuthenticated: () => void }
 }
 
 /* ─── Sub-components ─── */
+
+function DemoActivityStrand() {
+  const [phase, setPhase] = useState<'querying' | 'opening' | 'done'>('querying');
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setPhase('opening'), 1700);
+    const t2 = setTimeout(() => setPhase('done'), 3500);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
+
+  if (phase === 'done') return null;
+
+  return (
+    <div className={styles.demoActivityStrand}>
+      <span className={styles.demoActivityDot} />
+      <span className={styles.demoActivityText}>
+        {phase === 'querying' ? 'Operator is querying incidents…' : 'Opening INCIDENT-LUX-2026-0036…'}
+      </span>
+    </div>
+  );
+}
 
 function TypingText({ text }: { text: string }) {
   const [displayed, setDisplayed] = useState('');

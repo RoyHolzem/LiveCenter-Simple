@@ -105,14 +105,16 @@ export function ModuleDashboard({ view, onBackToXena }: ModuleDashboardProps) {
           ) : filteredRecords.length === 0 ? (
             <div className={styles.moduleEmpty}>No records found.</div>
           ) : (
-            filteredRecords.map((record) => (
+            filteredRecords.map((record, idx) => (
               <button
                 key={record.recordId}
                 type="button"
                 className={cn(
                   styles.moduleRecordCard,
+                  styles[`toneRow_${severityTone(record.severity)}`],
                   selectedRecord?.recordId === record.recordId && styles.moduleRecordCardActive
                 )}
+                style={{ animationDelay: `${Math.min(idx * 25, 240)}ms` }}
                 onClick={() => setSelectedRecordIds((prev) => ({ ...prev, [view]: record.recordId }))}
               >
                 <div className={styles.moduleRecordHead}>
@@ -127,7 +129,11 @@ export function ModuleDashboard({ view, onBackToXena }: ModuleDashboardProps) {
                 <div className={styles.moduleRecordTitle}>{record.title}</div>
                 <div className={styles.moduleRecordSummary}>{record.summary}</div>
                 <div className={styles.moduleRecordMeta}>
-                  {record.companyName} &middot; {record.serviceType} &middot; {record.city}
+                  <span>{record.companyName}</span>
+                  <span>·</span>
+                  <span>{record.serviceType}</span>
+                  <span>·</span>
+                  <span>{record.city}</span>
                 </div>
               </button>
             ))
@@ -136,7 +142,7 @@ export function ModuleDashboard({ view, onBackToXena }: ModuleDashboardProps) {
 
         <div className={styles.moduleDetail}>
           {selectedRecord ? (
-            <div className={styles.moduleDetailInner}>
+            <div key={selectedRecord.recordId} className={styles.moduleDetailInner}>
               <div className={styles.moduleDetailTitle}>{selectedRecord.title}</div>
               <div className={styles.moduleDetailBadges}>
                 <span className={cn(styles.sevBadge, styles[`tone_${severityTone(selectedRecord.severity)}`])}>{selectedRecord.severity}</span>
