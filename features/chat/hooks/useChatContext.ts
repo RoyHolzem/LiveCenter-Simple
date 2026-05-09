@@ -1,18 +1,20 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import type { ChatMessage, TelecomRecord, TelecomView } from '@/lib/types';
 
 /**
- * Matches the latest assistant message against loaded telecom records.
+ * Matches recent chat messages against loaded telecom records.
+ *
+ * Sticky by design: scans the last N messages for recordId mentions.
+ * Once a record is matched, it stays active until:
+ *  - A different record is matched
+ *  - The conversation clearly moves on (no mention in last 8 messages)
  *
  * Matching strategy (first match wins):
- *  1. Exact recordId match  ("INC-2026-0421")
+ *  1. Exact recordId match
  *  2. Circuit / fiber / site code match
  *  3. Fuzzy title / company / city / operator substring match
- *
- * Returns the best-matching record + which view it belongs to,
- * or null if nothing matches.
  */
 export function useChatContext(
   messages: ChatMessage[],
@@ -21,18 +23,15 @@ export function useChatContext(
   matchedRecord: TelecomRecord | null;
   matchedView: TelecomView | null;
 } {
-  return useMemo(() => {
-    // Find the last assistant message with content
-    const lastAssistant = [...messages]
-      .reverse()
-      .find((m) => m.role === 'assistant' && m.content.trim());
+  // Keep the last matched record for stickiness
+  const lastMatch = useRef<{ record: TelecomRecord; view: TelecomView } | null>(null);
 
-    // Also check last user message (for proactive matching before assistant replies)
-    const lastUser = [...messages]
-      .reverse()
-      .find((m) => m.role === 'user' && m.content.trim());
-
-    const text = [lastAssistant?.content, lastUser?.content]
+  const result = useMemo(() => {
+    // Scan all messages from newest to oldest for a match
+    // Use the last 8 messages as the search window
+    const window = messages.slice(-8);
+    const text = window
+      .map(m => m.content)
       .filter(Boolean)
       .join(' ')
       .toLowerCase();
@@ -41,7 +40,7 @@ export function useChatContext(
 
     const views: TelecomView[] = ['incidents', 'events', 'planned-works'];
 
-    // Strategy 1: exact recordId
+    // Strategy 1: exact recordId — highest priority
     for (const view of views) {
       for (const rec of recordsByView[view]) {
         const id = rec.recordId.toLowerCase();
@@ -51,7 +50,7 @@ export function useChatContext(
       }
     }
 
-    // Strategy 2: circuit / fiber / site codes (exact-ish)
+    // Strategy 2: circuit / fiber / site codes
     for (const view of views) {
       for (const rec of recordsByView[view]) {
         const codes = [rec.circuitId, rec.fiberId, rec.siteCode]
@@ -59,7 +58,6 @@ export function useChatContext(
           .filter((c) => c && c !== '—' && c.length > 2);
 
         for (const code of codes) {
-          // Require word-ish boundary to avoid partial matches
           if (text.includes(code)) {
             return { matchedRecord: rec, matchedView: view };
           }
@@ -67,8 +65,7 @@ export function useChatContext(
       }
     }
 
-    // Strategy 3: fuzzy substring match — title, summary, company, city, operator, customer
-    // Score each match to pick the best one
+    // Strategy 3: fuzzy substring match
     let bestScore = 0;
     let bestRecord: TelecomRecord | null = null;
     let bestView: TelecomView | null = null;
@@ -77,7 +74,6 @@ export function useChatContext(
       for (const rec of recordsByView[view]) {
         let score = 0;
 
-        // Check each field for substring match
         const fields: Array<{ value: string; weight: number }> = [
           { value: rec.title, weight: 10 },
           { value: rec.summary, weight: 5 },
@@ -97,21 +93,18 @@ export function useChatContext(
           const fv = field.value.toLowerCase();
           if (!fv || fv === '—') continue;
 
-          // Split field into tokens and check if any token appears in the chat text
           const tokens = fv.split(/[\s,.-]+/).filter((t) => t.length > 2);
           let matchedTokens = 0;
           for (const token of tokens) {
             if (text.includes(token)) matchedTokens++;
           }
 
-          // Require at least 2 matching tokens OR a full substring match for short values
           const tokenRatio = tokens.length > 0 ? matchedTokens / tokens.length : 0;
           if (tokenRatio >= 0.5 || (fv.length > 5 && text.includes(fv))) {
             score += Math.round(field.weight * tokenRatio);
           }
         }
 
-        // Boost if severity or status keywords match
         if (rec.severity !== '—' && text.includes(rec.severity.toLowerCase())) score += 3;
         if (rec.status !== '—' && text.includes(rec.status.replace('_', ' ').toLowerCase())) score += 2;
 
@@ -123,11 +116,34 @@ export function useChatContext(
       }
     }
 
-    // Only return if we have a meaningful match (threshold)
     if (bestScore >= 6 && bestRecord) {
       return { matchedRecord: bestRecord, matchedView: bestView };
     }
 
     return { matchedRecord: null, matchedView: null };
   }, [messages, recordsByView]);
+
+  // Sticky logic: keep the last match if the current result is null
+  // but the recordId still appears somewhere in recent messages
+  if (result.matchedRecord) {
+    lastMatch.current = { record: result.matchedRecord, view: result.matchedView! };
+    return result;
+  }
+
+  if (lastMatch.current) {
+    // Check if the last matched recordId still appears in recent messages
+    const window = messages.slice(-8);
+    const text = window.map(m => m.content).join(' ').toLowerCase();
+    const id = lastMatch.current.record.recordId.toLowerCase();
+    if (text.includes(id)) {
+      return {
+        matchedRecord: lastMatch.current.record,
+        matchedView: lastMatch.current.view,
+      };
+    }
+    // Conversation moved on
+    lastMatch.current = null;
+  }
+
+  return { matchedRecord: null, matchedView: null };
 }
