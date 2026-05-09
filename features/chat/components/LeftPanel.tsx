@@ -1,6 +1,6 @@
 'use client';
 
-import type { TelecomView } from '@/lib/types';
+import type { TelecomRecord, TelecomView } from '@/lib/types';
 import type { SearchResultsState } from '../hooks/useCockpitState';
 import { entityKindToTelecomView } from '@/lib/xena-ui-actions';
 import { cn } from '../chat-utils';
@@ -17,6 +17,8 @@ interface LeftPanelProps {
   searchResults: SearchResultsState;
   selectedRecordId: string | null;
   onPickSearchResult: (view: TelecomView, recordId: string) => void;
+  records: TelecomRecord[];
+  onPickRecord: (view: TelecomView, recordId: string) => void;
 }
 
 const CONTEXT_TABS: Array<{ key: TelecomView; label: string }> = [
@@ -32,6 +34,8 @@ export function LeftPanel({
   searchResults,
   selectedRecordId,
   onPickSearchResult,
+  records,
+  onPickRecord,
 }: LeftPanelProps) {
   const viewForResults = searchResults ? entityKindToTelecomView(searchResults.entity) : null;
 
@@ -92,6 +96,32 @@ export function LeftPanel({
             <div className={styles.contextLabel}>{selectedRecordId}</div>
             <div className={styles.contextHint}>Selected operational record</div>
           </div>
+        ) : records && records.length > 0 ? (
+          <ul className={styles.searchResultsList}>
+            {records.slice(0, 15).map((row) => (
+              <li key={row.recordId}>
+                <button
+                  type="button"
+                  className={cn(
+                    styles.searchResultRow,
+                    selectedRecordId === row.recordId && styles.searchResultRowActive,
+                  )}
+                  onClick={() => onPickRecord(contextView, row.recordId)}
+                >
+                  <div className={styles.searchResultHead}>
+                    <span className={cn(styles.sevBadge, styles[`tone_${severityTone(row.severity)}`])}>
+                      {row.severity}
+                    </span>
+                    <span className={cn(styles.statusBadgeChip, styles[`stat_${statusTone(row.status)}`])}>
+                      {row.status.replaceAll('_', ' ')}
+                    </span>
+                  </div>
+                  <div className={styles.searchResultTitle}>{row.title}</div>
+                  <div className={styles.searchResultId}>{row.recordId}</div>
+                </button>
+              </li>
+            ))}
+          </ul>
         ) : (
           <div className={styles.panelEmpty}>
             <div className={styles.panelEmptyIcon}>&#x2726;</div>

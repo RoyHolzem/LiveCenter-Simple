@@ -161,6 +161,10 @@ export function ChatShell() {
                 cockpit.setSearchResults(null);
                 void telecom.focusRecord(view, recordId);
               }}
+              records={telecom.filteredRecords}
+              onPickRecord={(view, recordId) => {
+                void telecom.focusRecord(view, recordId);
+              }}
             />
 
             <div className={styles.chatColumn}>
