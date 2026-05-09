@@ -58,30 +58,58 @@ AWS Infrastructure (CloudFormation):
   └── Amplify App           → 3 branches: main, staging, experimental
 
 Xena Operations API (separate stack):
-  ├── API Gateway (HTTP)    → 6 endpoints for telecom data
-  ├── Lambda                → Node.js 20, reads DynamoDB
-  └── IAM Role              → GetItem + Query + Scan on 3 tables only
+  ├── API Gateway (HTTP)    → read + write endpoints for telecom data
+  ├── Lambda                → Node.js 20, reads/writes DynamoDB
+  └── IAM Role              → GetItem + PutItem + UpdateItem + Query + Scan on 4 tables only
 ```
 
 **Secrets are never exposed to the browser.** Gateway token and API keys are stored in Secrets Manager and fetched server-side only. No `NEXT_PUBLIC_` prefix on secrets.
 
 ## Xena Operations API
 
-A dedicated HTTPS API for safe access to operational data. The Lambda uses an IAM role with least-privilege DynamoDB permissions — no direct AWS credentials anywhere.
+A dedicated HTTPS API for safe access to operational data. The Lambda uses an IAM role with least-privilege DynamoDB permissions — no direct AWS credentials anywhere. Supports both read (GET) and write (POST/PUT) operations.
 
 **Stack**: `xena-ops-api` (CloudFormation SAM)
 **IaC**: `infra/xena-ops-api/template.yaml`
+**API URL**: `https://tsbmgsi20f.execute-api.eu-central-1.amazonaws.com`
+**Lambda**: `xena-ops-api` (Node.js 20)
 
-| Endpoint | Description |
+### Read Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/incidents/latest` | 20 most recent incidents |
+| GET | `/incidents/open` | All open incidents (not RESOLVED/CLOSED) |
+| GET | `/events/latest` | 20 most recent events |
+| GET | `/events/open` | All open events (not COMPLETED/CLOSED) |
+| GET | `/planned-works/today` | Maintenance scheduled today |
+| GET | `/planned-works/open` | All open planned works |
+| GET | `/orders/latest` | 20 most recent orders |
+| GET | `/orders/open` | All open orders (not COMPLETED/CANCELLED) |
+
+### Write Endpoints
+
+| Method | Endpoint | Description | Required Fields |
+|---|---|---|---|
+| POST | `/incidents` | Create a new incident | `title`, `status`, `severity` |
+| POST | `/events` | Create a new event | `title`, `status`, `severity` |
+| POST | `/planned-works` | Create a new planned work | `title`, `status`, `severity` |
+| POST | `/orders` | Create a new order | `title`, `status`, `severity` |
+| PUT | `/incidents/{recordId}` | Update incident fields | any editable field |
+| PUT | `/events/{recordId}` | Update event fields | any editable field |
+| PUT | `/planned-works/{recordId}` | Update planned work fields | any editable field |
+| PUT | `/orders/{recordId}` | Update order fields | any editable field |
+
+### Valid Statuses
+
+| Entity | Valid Statuses |
 |---|---|
-| `GET /incidents/latest` | 20 most recent incidents |
-| `GET /incidents/open` | All open incidents (not RESOLVED/CLOSED) |
-| `GET /events/latest` | 20 most recent events |
-| `GET /events/open` | All open events (not COMPLETED/CLOSED) |
-| `GET /planned-works/today` | Maintenance scheduled today |
-| `GET /planned-works/open` | All open planned works |
+| Incidents | OPEN, ACKNOWLEDGED, IN_PROGRESS, MONITORING, RESOLVED, CLOSED |
+| Events | ACTIVE, MONITORING, INFO, COMPLETED, CLOSED |
+| Planned Works | PLANNED, APPROVED, CUSTOMER_NOTIFIED, READY, IN_EXECUTION, COMPLETED, CANCELLED, POSTPONED |
+| Orders | NEW, ACKNOWLEDGED, IN_PROGRESS, PENDING_INFO, COMPLETED, CANCELLED |
 
-**IAM policy**: `dynamodb:GetItem`, `dynamodb:Query`, `dynamodb:Scan` on `roy-telecom-incidents-lux`, `roy-telecom-events-lux`, `roy-telecom-planned-works-lux` only.
+**IAM policy**: `dynamodb:GetItem`, `dynamodb:PutItem`, `dynamodb:UpdateItem`, `dynamodb:Query`, `dynamodb:Scan` on `roy-telecom-incidents-lux`, `roy-telecom-events-lux`, `roy-telecom-planned-works-lux`, `roy-telecom-orders-lux`.
 
 ### Deploy the Operations API
 
@@ -292,9 +320,13 @@ npm run dev
 │   ├── vps-workspaces/
 │   │   ├── workspace/              # Xena main agent workspace files
 │   │   └── workspace-operator/     # Operator agent workspace files
+│   ├── web-request-plugin/         # Custom OpenClaw plugin (web_post + web_put tools)
+│   │   ├── openclaw.plugin.json
+│   │   ├── package.json
+│   │   └── index.mjs
 │   └── xena-ops-api/
 │       ├── template.yaml           # Operations API: Lambda + API Gateway + IAM
-│       └── src/index.mjs           # Lambda handler (6 endpoints)
+│       └── src/index.mjs           # Lambda handler (GET + POST + PUT endpoints for 4 entities)
 ├── lib/
 │   ├── cognito-jwt.ts              # JWT verifier
 │   ├── config.ts
@@ -381,7 +413,34 @@ The operator agent runs inside an OpenClaw Docker sandbox. It does **not** have:
 - `aws` CLI or direct DynamoDB access
 - Any AWS credentials
 
-All data access uses OpenClaw's built-in `web_fetch` tool to call the Operations API endpoints.
+All data access uses OpenClaw's built-in tools:
+- **`web_fetch`** — GET requests to query data from the Operations API
+- **`web_post`** — POST requests to create new records (provided by the `web-request` plugin)
+- **`web_put`** — PUT requests to update existing records (provided by the `web-request` plugin)
+
+### web-request Plugin
+
+A custom OpenClaw gateway plugin (`web-request`) provides `web_post` and `web_put` tools, enabling the operator agent to create and modify records without shell access.
+
+**Location on VPS**: `/usr/lib/node_modules/openclaw/dist/extensions/web-request/`
+**Source**: `workspace/web-request-plugin/`
+
+**Security features**:
+- URL allowlist — only configured base URL prefixes are permitted
+- API keys from environment variables only, never from model input
+- Auto `Content-Type: application/json` and auto-stringify JSON bodies
+- Arbitrary Authorization headers from model input are stripped
+- Secrets redacted from responses
+
+**Configuration** (in `openclaw.json` → `plugins.entries["web-request"]`):
+```json
+{
+  "enabled": true,
+  "config": {
+    "allowUrls": "https://tsbmgsi20f.execute-api.eu-central-1.amazonaws.com"
+  }
+}
+```
 
 ## License
 

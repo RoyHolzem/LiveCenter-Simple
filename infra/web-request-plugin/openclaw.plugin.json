@@ -1,0 +1,29 @@
+{
+  "id": "web-request",
+  "activation": {
+    "onStartup": true
+  },
+  "enabledByDefault": true,
+  "name": "Web Request (POST/PUT)",
+  "description": "Provides web_post and web_put tools for making POST and PUT requests to configured allowlisted URLs. API keys are read from environment variables only.",
+  "contracts": {
+    "tools": [
+      "web_post",
+      "web_put"
+    ]
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "allowUrls": {
+        "type": "string",
+        "description": "Comma-separated list of allowed base URL prefixes"
+      },
+      "authEnvVar": {
+        "type": "string",
+        "description": "Name of env var containing the Bearer token (optional)"
+      }
+    }
+  }
+}
