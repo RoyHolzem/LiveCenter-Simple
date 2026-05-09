@@ -27,6 +27,52 @@ const CONTEXT_TABS: Array<{ key: TelecomView; label: string }> = [
   { key: 'planned-works', label: 'Maint.' },
 ];
 
+interface RecordRowData {
+  recordId: string;
+  title: string;
+  status: string;
+  severity: string;
+}
+
+function RecordRow({
+  row,
+  active,
+  index,
+  onClick,
+}: {
+  row: RecordRowData;
+  active: boolean;
+  index: number;
+  onClick: () => void;
+}) {
+  const sevTone = severityTone(row.severity);
+  return (
+    <li>
+      <button
+        type="button"
+        className={cn(
+          styles.searchResultRow,
+          styles[`toneRow_${sevTone}`],
+          active && styles.searchResultRowActive,
+        )}
+        style={{ animationDelay: `${Math.min(index * 25, 220)}ms` }}
+        onClick={onClick}
+      >
+        <div className={styles.searchResultHead}>
+          <span className={cn(styles.sevBadge, styles[`tone_${sevTone}`])}>
+            {row.severity}
+          </span>
+          <span className={cn(styles.statusBadgeChip, styles[`stat_${statusTone(row.status)}`])}>
+            {row.status.replaceAll('_', ' ')}
+          </span>
+        </div>
+        <div className={styles.searchResultTitle}>{row.title}</div>
+        <div className={styles.searchResultId}>{row.recordId}</div>
+      </button>
+    </li>
+  );
+}
+
 export function LeftPanel({
   visible,
   contextView,
@@ -64,30 +110,17 @@ export function LeftPanel({
               {searchResults.entity === 'incident' && `${searchResults.results.length} matching incidents`}
               {searchResults.entity === 'event' && `${searchResults.results.length} matching events`}
               {searchResults.entity === 'planned-work' && `${searchResults.results.length} matching planned works`}
+              {searchResults.entity === 'order' && `${searchResults.results.length} matching orders`}
             </div>
             <ul className={styles.searchResultsList}>
-              {searchResults.results.map((row) => (
-                <li key={row.recordId}>
-                  <button
-                    type="button"
-                    className={cn(
-                      styles.searchResultRow,
-                      selectedRecordId === row.recordId && styles.searchResultRowActive,
-                    )}
-                    onClick={() => onPickSearchResult(viewForResults, row.recordId)}
-                  >
-                    <div className={styles.searchResultHead}>
-                      <span className={cn(styles.sevBadge, styles[`tone_${severityTone(row.severity)}`])}>
-                        {row.severity}
-                      </span>
-                      <span className={cn(styles.statusBadgeChip, styles[`stat_${statusTone(row.status)}`])}>
-                        {row.status.replaceAll('_', ' ')}
-                      </span>
-                    </div>
-                    <div className={styles.searchResultTitle}>{row.title}</div>
-                    <div className={styles.searchResultId}>{row.recordId}</div>
-                  </button>
-                </li>
+              {searchResults.results.map((row, i) => (
+                <RecordRow
+                  key={row.recordId}
+                  row={row}
+                  index={i}
+                  active={selectedRecordId === row.recordId}
+                  onClick={() => onPickSearchResult(viewForResults, row.recordId)}
+                />
               ))}
             </ul>
           </div>
@@ -97,36 +130,22 @@ export function LeftPanel({
             <div className={styles.contextHint}>Selected operational record</div>
           </div>
         ) : records && records.length > 0 ? (
-          <ul className={styles.searchResultsList}>
-            {records.slice(0, 15).map((row) => (
-              <li key={row.recordId}>
-                <button
-                  type="button"
-                  className={cn(
-                    styles.searchResultRow,
-                    selectedRecordId === row.recordId && styles.searchResultRowActive,
-                  )}
-                  onClick={() => onPickRecord(contextView, row.recordId)}
-                >
-                  <div className={styles.searchResultHead}>
-                    <span className={cn(styles.sevBadge, styles[`tone_${severityTone(row.severity)}`])}>
-                      {row.severity}
-                    </span>
-                    <span className={cn(styles.statusBadgeChip, styles[`stat_${statusTone(row.status)}`])}>
-                      {row.status.replaceAll('_', ' ')}
-                    </span>
-                  </div>
-                  <div className={styles.searchResultTitle}>{row.title}</div>
-                  <div className={styles.searchResultId}>{row.recordId}</div>
-                </button>
-              </li>
+          <ul key={contextView} className={styles.searchResultsList}>
+            {records.slice(0, 15).map((row, i) => (
+              <RecordRow
+                key={row.recordId}
+                row={row}
+                index={i}
+                active={selectedRecordId === row.recordId}
+                onClick={() => onPickRecord(contextView, row.recordId)}
+              />
             ))}
           </ul>
         ) : (
           <div className={styles.panelEmpty}>
             <div className={styles.panelEmptyIcon}>&#x2726;</div>
             <div>
-              No operational context loaded yet. Ask the operator to open an incident, event, or planned work—or use
+              No operational context loaded yet. Ask the operator to open an incident, event, or planned work — or use
               the tabs to choose a domain for your next command.
             </div>
           </div>
