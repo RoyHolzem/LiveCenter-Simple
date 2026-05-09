@@ -18,11 +18,13 @@ const nowIso = () => new Date().toISOString();
 export type UseChatOptions = {
   onXenaAction?: (event: XenaActionEvent) => void;
   onUiActions?: (actions: XenaUiAction[]) => void;
+  onResponseDone?: () => void;
 };
 
 export function useChat(selectedModel: string = 'inceptionlabs/mercury-2', options?: UseChatOptions) {
   const onXenaAction = options?.onXenaAction;
   const onUiActions = options?.onUiActions;
+  const onResponseDone = options?.onResponseDone;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [presence, setPresence] = useState<PresenceState>('idle');
@@ -195,6 +197,7 @@ export function useChat(selectedModel: string = 'inceptionlabs/mercury-2', optio
           const raw = line.slice(5).trim();
           if (!raw || raw === '[DONE]') {
             setPresence('idle');
+            onResponseDone?.();
             continue;
           }
 
@@ -224,6 +227,7 @@ export function useChat(selectedModel: string = 'inceptionlabs/mercury-2', optio
       }
 
       setPresence('idle');
+      onResponseDone?.();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       setPresence('error');
@@ -236,7 +240,7 @@ export function useChat(selectedModel: string = 'inceptionlabs/mercury-2', optio
         )
       );
     }
-  }, [draft, messages, presence, selectedModel, onXenaAction, onUiActions]);
+  }, [draft, messages, presence, selectedModel, onXenaAction, onUiActions, onResponseDone]);
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
