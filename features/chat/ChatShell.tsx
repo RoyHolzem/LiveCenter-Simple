@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import type { XenaUiAction } from '@/lib/xena-ui-actions';
+import type { TelecomView } from '@/lib/types';
 import { publicConfig } from './chat-config';
 import { useAuthToken } from '../auth/AuthWrapper';
 import { useChat } from './hooks/useChat';
@@ -15,12 +16,10 @@ import { useModels } from './hooks/useModels';
 import { TopNav, type AppMode } from './components/TopNav';
 import { ChatCenter } from './components/ChatCenter';
 import { LeftPanel } from './components/LeftPanel';
-import { RightPanel } from './components/RightPanel';
+import { RecordOverlay } from './components/RecordOverlay';
 import { ModuleDashboard } from './components/ModuleDashboard';
 import { BootScreen } from './components/BootScreen';
 import { AgentActivityBar } from './components/AgentActivityBar';
-
-import type { TelecomView } from '@/lib/types';
 import styles from './chat-shell.module.css';
 
 const DEFAULT_MODEL = 'inceptionlabs/mercury-2';
@@ -34,6 +33,8 @@ export function ChatShell() {
   const [contextView, setContextView] = useState<TelecomView>('incidents');
   const [search] = useState('');
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
+  const [overlayOpen, setOverlayOpen] = useState(false);
+  const [overlayClosing, setOverlayClosing] = useState(false);
 
   const { ghStatus, ghCommit } = useGitHub();
   const { models } = useModels();
@@ -56,7 +57,6 @@ export function ChatShell() {
   const chat = useChat(selectedModel, {
     onUiActions,
     onResponseDone: useCallback(() => {
-      // Reload current telecom view to reflect any changes made by the operator
       void telecom.loadTelecomView(contextView, true);
     }, [contextView, telecom]),
   });
@@ -65,57 +65,60 @@ export function ChatShell() {
     onUserTranscript: useCallback((text: string) => {
       chat.addVoiceUserMessage(text);
     }, [chat]),
-
     onResponseStart: useCallback(() => {
       chat.resetVoiceAssistant();
     }, [chat]),
-
     onAssistantDelta: useCallback((delta: string) => {
       chat.appendVoiceAssistantDelta(delta);
     }, [chat]),
-
-    onResponseDone: useCallback(() => {
-      // no-op
-    }, []),
-
+    onResponseDone: useCallback(() => {}, []),
     onError: useCallback((err: string) => {
       console.error('[voice]', err);
     }, []),
-
     onUiActions,
   });
 
   const boot = useBootSequence();
 
-  // Preload all telecom views on mount so the chat context matcher has data
+  // Preload all telecom views on mount
   useEffect(() => {
     const views: TelecomView[] = ['incidents', 'events', 'planned-works'];
     for (const view of views) {
       void telecom.loadTelecomView(view, true);
     }
-    // Only run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Chat-driven context: match conversation to telecom records (sticky by design)
+  // Chat-driven context matching
   const { matchedRecord, matchedView } = useChatContext(
     chat.messages,
     telecom.recordsByView,
   );
 
-  // When a record is matched via chat context, override the active view + selection
+  // When a record is matched, select it and open overlay
   useEffect(() => {
     if (matchedRecord && matchedView) {
       if (matchedView !== contextView) {
         setContextView(matchedView);
       }
       telecom.selectRecord(matchedView, matchedRecord.recordId);
+      setOverlayOpen(true);
+      setOverlayClosing(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchedRecord, matchedView]);
 
-  // The record to show in the right panel: chat context match takes priority
+  // The record to show: chat context match takes priority
   const displayRecord = matchedRecord || telecom.selectedRecord;
+  const activeView = matchedView || contextView;
+
+  const closeOverlay = useCallback(() => {
+    setOverlayClosing(true);
+    setTimeout(() => {
+      setOverlayOpen(false);
+      setOverlayClosing(false);
+    }, 200);
+  }, []);
 
   const isXenaMode = mode === 'xena';
   const isReady = boot.bootState === 'ready';
@@ -156,14 +159,18 @@ export function ChatShell() {
               contextView={contextView}
               onContextViewChange={setContextView}
               searchResults={cockpit.searchResults}
-              selectedRecordId={displayRecord?.recordId ?? telecom.selectedRecord?.recordId ?? null}
+              selectedRecordId={displayRecord?.recordId ?? null}
               onPickSearchResult={(view, recordId) => {
                 cockpit.setSearchResults(null);
                 void telecom.focusRecord(view, recordId);
+                setOverlayOpen(true);
+                setOverlayClosing(false);
               }}
               records={telecom.filteredRecords}
               onPickRecord={(view, recordId) => {
                 void telecom.focusRecord(view, recordId);
+                setOverlayOpen(true);
+                setOverlayClosing(false);
               }}
             />
 
@@ -192,11 +199,19 @@ export function ChatShell() {
               />
             </div>
 
-            <RightPanel
-              visible
-              selectedRecord={displayRecord}
-              activeView={matchedView || contextView}
-            />
+            {/* Floating record overlay — replaces the permanent right panel */}
+            {overlayOpen && displayRecord && (
+              <div className={`${styles.recordOverlay} ${styles.recordOverlayVisible}`}>
+                <div className={styles.recordOverlayBackdrop} onClick={closeOverlay} />
+                <div className={`${styles.recordOverlayCard} ${overlayClosing ? styles.recordOverlayCardClosing : ''}`}>
+                  <RecordOverlay
+                    record={displayRecord}
+                    view={activeView}
+                    onClose={closeOverlay}
+                  />
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <ModuleDashboard
