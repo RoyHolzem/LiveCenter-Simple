@@ -214,75 +214,9 @@ export async function POST(request: Request) {
         responseHeaders['x-actual-model'] = actualModel;
       }
 
-      // Pipe through the xena_ui injector to emit OPEN_* actions from record IDs
-      const seen = new Set<string>();
-      const reader = response.body!.getReader();
-      let firstChunk = true;
-
-      const injectedStream = new ReadableStream({
-        async pull(controller) {
-          const { done, value } = await reader.read();
-          if (done) {
-            controller.close();
-            return;
-          }
-
-          const text = new TextDecoder().decode(value, { stream: true });
-
-          // Inject a test xena_ui on the very first chunk to verify frontend wiring
-          if (firstChunk) {
-            firstChunk = false;
-            // No-op: don't inject test event, only inject on real record IDs
-          }
-
-          // Split on SSE event boundaries (\n\n)
-          const events = text.split('\n\n');
-          for (let i = 0; i < events.length; i++) {
-            const event = events[i];
-
-            if (!event.trim()) continue;
-
-            // Forward the event
-            controller.enqueue(new TextEncoder().encode(event + '\n\n'));
-
-            // Scan for record IDs in delta content
-            const dataLine = event.split('\n').find((l) => l.startsWith('data: '));
-            if (!dataLine || dataLine === 'data: [DONE]') continue;
-
-            try {
-              const json = JSON.parse(dataLine.slice(6));
-              const content: string =
-                json?.choices?.[0]?.delta?.content ??
-                json?.choices?.[0]?.message?.content ??
-                '';
-              if (!content) continue;
-
-              let match: RegExpExecArray | null;
-              RECORD_ID_RE.lastIndex = 0;
-              while ((match = RECORD_ID_RE.exec(content)) !== null) {
-                const recordId = match[1];
-                if (seen.has(recordId)) continue;
-                seen.add(recordId);
-
-                const action = recordIdToAction(recordId);
-                if (!action) continue;
-
-                const payload = JSON.stringify({
-                  type: 'xena_ui',
-                  uiActions: [action],
-                });
-                console.log('[chat] Injecting xena_ui:', payload);
-                controller.enqueue(new TextEncoder().encode(`data: ${payload}\n\n`));
-              }
-            } catch {
-              // Not JSON — skip
-            }
-          }
-        },
-        cancel() {
-          reader.cancel();
-        },
-      });
+      // Pipe through the xena_ui injector to emit OPEN_* actions from record IDs.
+      // The transform buffers partial SSE events across chunks before parsing them.
+      const injectedStream = response.body.pipeThrough(createXenaUiInjector());
 
       return new Response(injectedStream, {
         status: 200,
