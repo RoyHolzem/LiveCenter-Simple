@@ -52,7 +52,7 @@ export function LandingPage({ onAuthenticated }: { onAuthenticated: () => void }
               initialState={authMode === 'signup' ? 'signUp' : 'signIn'}
               variation="modal"
             >
-              {() => { onAuthenticated(); return null; }}
+              {() => { onAuthenticated(); return <div />; }}
             </Authenticator>
           </div>
         </div>
