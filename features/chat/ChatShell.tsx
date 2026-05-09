@@ -97,19 +97,44 @@ export function ChatShell() {
     telecom.recordsByView,
   );
 
-  // When a record is matched via chat context, override the active view + selection
+  // Sticky context: keep showing the last matched record until a different one is matched.
+  // This prevents the context card from disappearing on follow-up messages.
+  const [stickyRecord, setStickyRecord] = useState<{ record: typeof matchedRecord; view: typeof matchedView }>({ record: null, view: null });
+
   useEffect(() => {
     if (matchedRecord && matchedView) {
-      if (matchedView !== contextView) {
-        setContextView(matchedView);
+      // New match — update sticky
+      setStickyRecord({ record: matchedRecord, view: matchedView });
+    } else if (stickyRecord.record && matchedRecord === null) {
+      // No current match but we have a sticky record — check if any recent message still references it
+      const lastN = chat.messages.slice(-6);
+      const recentText = lastN.map(m => m.content).join(' ').toLowerCase();
+      const stickyId = stickyRecord.record.recordId.toLowerCase();
+      if (!recentText.includes(stickyId)) {
+        // The conversation has moved on — clear sticky
+        setStickyRecord({ record: null, view: null });
       }
-      telecom.selectRecord(matchedView, matchedRecord.recordId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchedRecord, matchedView]);
 
+  // Use live match if available, otherwise fall back to sticky
+  const contextRecord = matchedRecord || stickyRecord.record;
+  const contextView_ = matchedView || stickyRecord.view;
+
+  // When a record is matched via chat context, override the active view + selection
+  useEffect(() => {
+    if (contextRecord && contextView_) {
+      if (contextView_ !== contextView) {
+        setContextView(contextView_);
+      }
+      telecom.selectRecord(contextView_, contextRecord.recordId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contextRecord, contextView_]);
+
   // The record to show in the right panel: chat context match takes priority
-  const displayRecord = matchedRecord || telecom.selectedRecord;
+  const displayRecord = contextRecord || telecom.selectedRecord;
 
   const isXenaMode = mode === 'xena';
   const isReady = boot.bootState === 'ready';
@@ -177,15 +202,15 @@ export function ChatShell() {
                 voiceError={voice.error}
                 onToggleVoice={voice.toggle}
                 voiceActive={voice.isActive}
-                matchedRecord={matchedRecord}
-                matchedView={matchedView}
+                matchedRecord={contextRecord}
+                matchedView={contextView_}
               />
             </div>
 
             <RightPanel
               visible
               selectedRecord={displayRecord}
-              activeView={matchedView || contextView}
+              activeView={contextView_ || contextView}
             />
           </>
         ) : (
