@@ -236,6 +236,21 @@ export async function POST(request: Request) {
 
             if (!event.trim()) continue;
 
+            // DEBUG: log raw SSE events to see what gateway sends
+            const rawLine = event.split('\n').find((l) => l.startsWith('data: '));
+            if (rawLine && rawLine !== 'data: [DONE]') {
+              try {
+                const rawJson = JSON.parse(rawLine.slice(6));
+                // Log non-delta events and tool_calls
+                const hasToolCalls = rawJson?.choices?.[0]?.delta?.tool_calls;
+                const hasContent = rawJson?.choices?.[0]?.delta?.content;
+                const type = rawJson?.type;
+                if (hasToolCalls || type || !hasContent) {
+                  console.log('[chat-raw] SSE event:', JSON.stringify(rawJson).substring(0, 300));
+                }
+              } catch { /* not json */ }
+            }
+
             // Forward the event as-is first
             controller.enqueue(new TextEncoder().encode(event + '\n\n'));
 
