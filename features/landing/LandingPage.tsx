@@ -3,7 +3,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { Authenticator } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
-import { XenaLogo } from './XenaLogo';
 import styles from './landing.module.css';
 
 const formFields = {
@@ -66,7 +65,7 @@ export function LandingPage({ onAuthenticated }: { onAuthenticated: () => void }
       <nav className={`${styles.nav} navbar navbar-expand`}>
         <div className="container-fluid px-0">
           <a className={`${styles.brand} navbar-brand`} href="#top" aria-label="Xena home">
-            <XenaLogo size={42} withWordmark className={styles.brandLogo} />
+            <img src="/logo.png" alt="Xena" className={styles.brandLogo} />
           </a>
           <div className="d-flex align-items-center gap-2 ms-auto">
             <button className="btn btn-sm btn-outline-dark" onClick={() => setAuthMode('signin')} type="button">Sign in</button>
@@ -79,7 +78,7 @@ export function LandingPage({ onAuthenticated }: { onAuthenticated: () => void }
         <div className="row justify-content-center">
           <div className="col-12 col-xl-10">
             <div className={styles.logoStage}>
-              <XenaLogo size={82} withWordmark className={styles.heroLogo} />
+              <img src="/logo.png" alt="Xena" className={styles.heroLogo} />
             </div>
 
             <div className={`${styles.showcase} card border-0 shadow-lg`}>

@@ -60,12 +60,16 @@
   margin: 0;
 }
 
-.brandLogo,
-.heroLogo {
-  overflow: visible;
+.brandLogo {
+  height: 36px;
+  width: auto;
+  border-radius: 8px;
 }
 
 .heroLogo {
+  height: 72px;
+  width: auto;
+  border-radius: 12px;
   filter: drop-shadow(0 20px 34px rgba(11, 29, 49, 0.2));
   animation: logoGlitch 6s steps(1, end) infinite;
 }
