@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { TelecomView } from '@/lib/types';
 import type { ModelInfo } from '../hooks/useModels';
+import { XenaLogo } from '@/features/landing/XenaLogo';
 import { cn } from '../chat-utils';
 import styles from '../chat-shell.module.css';
 
@@ -68,7 +69,7 @@ export function TopNav({ mode, setMode, ghStatus, ghCommit, models, selectedMode
     <nav className={styles.topNav}>
       <div className={styles.topNavLeft}>
         <div className={styles.topNavBrand}>
-          <div className={styles.topNavLogo}>X</div>
+          <XenaLogo size={34} withWordmark={false} className={styles.topNavLogoMark} />
           <span className={styles.topNavAppName}>Xena</span>
         </div>
 

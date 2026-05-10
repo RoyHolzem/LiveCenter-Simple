@@ -1,6 +1,7 @@
 'use client';
 
 import type { BootStep, BootState } from '../hooks/useBootSequence';
+import { XenaLogo } from '@/features/landing/XenaLogo';
 import { cn } from '../chat-utils';
 import styles from '../chat-shell.module.css';
 
@@ -13,33 +14,35 @@ interface BootScreenProps {
   assistantInitial: string;
 }
 
-export function BootScreen({ bootState, steps, progress, onStart, assistantName, assistantInitial }: BootScreenProps) {
+export function BootScreen({ bootState, steps, progress, onStart, assistantName }: BootScreenProps) {
   const isIdle = bootState === 'idle';
   const isBooting = bootState === 'booting';
   const isError = bootState === 'error';
 
+  if (isBooting) {
+    return (
+      <div className={styles.bootScreen} aria-label="Loading Xena">
+        <div className={styles.bootOnlySpinner} />
+      </div>
+    );
+  }
+
   return (
     <div className={styles.bootScreen}>
       <div className={styles.bootContainer}>
-        {/* Logo */}
         <div className={styles.bootLogo}>
-          <div className={styles.bootLogoCircle}>
-            {assistantInitial}
-          </div>
+          <XenaLogo size={88} withWordmark={false} className={styles.bootLogoMark} />
           <div className={styles.bootLogoGlow} />
         </div>
 
-        {/* Title */}
         <h1 className={styles.bootTitle}>{assistantName}</h1>
         <p className={styles.bootSubtitle}>
           {isIdle && 'AI Operations Cockpit'}
-          {isBooting && 'Initializing systems...'}
           {isError && 'Startup failed'}
         </p>
 
-        {/* Start button or progress */}
         {isIdle && (
-          <button className={styles.bootStartBtn} onClick={onStart}>
+          <button className={styles.bootStartBtn} onClick={onStart} type="button">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
               <polygon points="6,3 20,12 6,21" />
             </svg>
@@ -47,17 +50,15 @@ export function BootScreen({ bootState, steps, progress, onStart, assistantName,
           </button>
         )}
 
-        {(isBooting || isError) && (
+        {isError && (
           <>
-            {/* Progress bar */}
             <div className={styles.bootProgressBar}>
               <div
-                className={cn(styles.bootProgressFill, isError && styles.bootProgressError)}
+                className={cn(styles.bootProgressFill, styles.bootProgressError)}
                 style={{ width: `${progress}%` }}
               />
             </div>
 
-            {/* Steps */}
             <div className={styles.bootSteps}>
               {steps.map((step, i) => (
                 <div key={i} className={cn(
@@ -83,11 +84,9 @@ export function BootScreen({ bootState, steps, progress, onStart, assistantName,
               ))}
             </div>
 
-            {isError && (
-              <button className={styles.bootRetryBtn} onClick={onStart}>
-                Retry
-              </button>
-            )}
+            <button className={styles.bootRetryBtn} onClick={onStart} type="button">
+              Retry
+            </button>
           </>
         )}
       </div>
