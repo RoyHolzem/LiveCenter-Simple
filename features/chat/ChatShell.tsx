@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import type { XenaUiAction } from '@/lib/xena-ui-actions';
+import type { XenaActionEvent } from '@/lib/types';
 import { publicConfig } from './chat-config';
 import { useAuthToken } from '../auth/AuthWrapper';
 import { useChat } from './hooks/useChat';
@@ -12,7 +13,7 @@ import { useCockpitState } from './hooks/useCockpitState';
 import { useChatContext } from './hooks/useChatContext';
 import { useGitHub } from './hooks/useGitHub';
 import { useModels } from './hooks/useModels';
-import { useActionLog, useActionLogSync } from './hooks/useActionLog';
+import { useActionLog, useActionLogSync, actionEventToEntry } from './hooks/useActionLog';
 import { TopNav, type AppMode } from './components/TopNav';
 import { ChatCenter } from './components/ChatCenter';
 import { AgentActionsPanel } from './components/AgentActionsPanel';
@@ -65,7 +66,16 @@ export function ChatShell() {
     [cockpit],
   );
 
+  // Log action events from the server (GET /incidents, web_fetch, etc.)
+  const onXenaAction = useCallback(
+    (event: XenaActionEvent) => {
+      actionLog.addEntry(actionEventToEntry(event));
+    },
+    [actionLog],
+  );
+
   const chat = useChat(selectedModel, {
+    onXenaAction,
     onUiActions,
     onResponseDone: useCallback(() => {
       void telecom.loadTelecomView(contextView, true);
