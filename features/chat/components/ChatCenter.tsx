@@ -3,6 +3,7 @@
 import type { ChatMessage, PresenceState, TelecomRecord, TelecomView } from '@/lib/types';
 import type { VoiceState } from '../hooks/useVoice';
 import { cn } from '../chat-utils';
+import { XenaLogo } from '@/features/landing/XenaLogo';
 import { ContextCard } from './ContextCard';
 import styles from '../chat-shell.module.css';
 
@@ -90,7 +91,7 @@ export function ChatCenter({
       <div className={styles.chatAvatarBar}>
         <div className={styles.chatAvatarWrap}>
           <div className={cn(styles.chatAvatarCircle, styles[`avatar_${effectiveAvatarState}`])}>
-            {assistantInitial}
+            <XenaLogo size={32} withWordmark={false} className={styles.chatAvatarLogo} />
           </div>
           <div className={cn(styles.chatAvatarRing, styles[`ring_${effectiveAvatarState}`])} />
         </div>
@@ -121,7 +122,7 @@ export function ChatCenter({
             style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
           >
             <div className={styles.chatMsgAvatar}>
-              {message.role === 'user' ? 'R' : assistantInitial}
+              {message.role === 'user' ? 'R' : <XenaLogo size={20} withWordmark={false} className={styles.chatMsgLogo} />}
             </div>
             <div className={styles.chatMsgContent}>
               <div className={styles.chatMsgRole}>

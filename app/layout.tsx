@@ -1,13 +1,5 @@
 import type { Metadata } from 'next';
-import { DM_Sans } from 'next/font/google';
 import './globals.css';
-
-const dmSans = DM_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-sans',
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   title: 'Xena — AI Command Center',
@@ -19,8 +11,16 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={dmSans.variable}>
-      <body className={dmSans.className}>{children}</body>
+    <html lang="en">
+      <head>
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9Oer+R5QwYAvRJG8FypA2fNwAo4I8BPaHcF+/8twwZ9"
+          crossOrigin="anonymous"
+        />
+      </head>
+      <body>{children}</body>
     </html>
   );
 }
