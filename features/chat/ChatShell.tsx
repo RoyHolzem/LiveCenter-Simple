@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import type { XenaActionEvent } from '@/lib/types';
 import type { XenaUiAction } from '@/lib/xena-ui-actions';
 import { publicConfig } from './chat-config';
 import { useAuthToken } from '../auth/AuthWrapper';
@@ -13,7 +12,7 @@ import { useCockpitState } from './hooks/useCockpitState';
 import { useChatContext } from './hooks/useChatContext';
 import { useGitHub } from './hooks/useGitHub';
 import { useModels } from './hooks/useModels';
-import { useActionLog, useActionLogSync, toolEventToEntry, toolCallToEntry, toolResultToEntry, uiActionToEntry } from './hooks/useActionLog';
+import { useActionLog, useActionLogSync } from './hooks/useActionLog';
 import { TopNav, type AppMode } from './components/TopNav';
 import { ChatCenter } from './components/ChatCenter';
 import { AgentActionsPanel } from './components/AgentActionsPanel';
@@ -43,7 +42,6 @@ export function ChatShell() {
   const { ghStatus, ghCommit } = useGitHub();
   const { models } = useModels();
 
-  // Theme toggle
   const toggleTheme = useCallback(() => {
     setTheme((prev) => {
       const next = prev === 'dark' ? 'light' : 'dark';
@@ -60,46 +58,15 @@ export function ChatShell() {
 
   const cockpit = useCockpitState(telecom, setContextView);
 
-  // Log UI actions to the panel
   const onUiActions = useCallback(
     (actions: XenaUiAction[]) => {
-      for (const action of actions) {
-        actionLog.addEntry(uiActionToEntry(action));
-      }
       void cockpit.dispatchUiActions(actions);
     },
-    [cockpit, actionLog],
-  );
-
-  // Log tool execution events to the panel
-  const onXenaAction = useCallback(
-    (event: XenaActionEvent) => {
-      actionLog.addEntry(toolEventToEntry(event));
-    },
-    [actionLog],
-  );
-
-  // Log tool calls (when agent calls exec, web_fetch, read, etc.)
-  const onToolCall = useCallback(
-    (call: { id: string; name: string; arguments: string }) => {
-      actionLog.addEntry(toolCallToEntry(call.name, call.arguments));
-    },
-    [actionLog],
-  );
-
-  // Log tool results
-  const onToolResult = useCallback(
-    (result: { id: string; name: string; content: string }) => {
-      actionLog.addEntry(toolResultToEntry(result.name, result.content));
-    },
-    [actionLog],
+    [cockpit],
   );
 
   const chat = useChat(selectedModel, {
-    onXenaAction,
     onUiActions,
-    onToolCall,
-    onToolResult,
     onResponseDone: useCallback(() => {
       void telecom.loadTelecomView(contextView, true);
     }, [contextView, telecom]),
@@ -109,30 +76,24 @@ export function ChatShell() {
     onUserTranscript: useCallback((text: string) => {
       chat.addVoiceUserMessage(text);
     }, [chat]),
-
     onResponseStart: useCallback(() => {
       chat.resetVoiceAssistant();
     }, [chat]),
-
     onAssistantDelta: useCallback((delta: string) => {
       chat.appendVoiceAssistantDelta(delta);
     }, [chat]),
-
     onResponseDone: useCallback(() => {}, []),
-
     onError: useCallback((err: string) => {
       console.error('[voice]', err);
     }, []),
-
     onUiActions,
   });
 
   const boot = useBootSequence();
 
-  // Sync action log with chat state (presence changes, new messages)
+  // Sync action log with chat state
   useActionLogSync(actionLog, chat.presence, chat.messages);
 
-  // Preload all telecom views on mount
   useEffect(() => {
     const views: TelecomView[] = ['incidents', 'events', 'planned-works'];
     for (const view of views) {
@@ -141,13 +102,11 @@ export function ChatShell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Chat-driven context matching
   const { matchedRecord, matchedView } = useChatContext(
     chat.messages,
     telecom.recordsByView,
   );
 
-  // When a record is matched via chat context, override the active view + selection
   useEffect(() => {
     if (matchedRecord && matchedView) {
       if (matchedView !== contextView) {
@@ -196,7 +155,6 @@ export function ChatShell() {
       <div className={styles.body}>
         {isXenaMode ? (
           <>
-            {/* Left: Agent actions log */}
             <AgentActionsPanel actions={actionLog.actions} />
 
             <div className={styles.chatColumn}>
