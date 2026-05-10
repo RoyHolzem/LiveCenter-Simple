@@ -276,6 +276,12 @@
   background: var(--tint-focus-bg);
   flex-shrink: 0;
 }
+.agentActionSpinner {
+  display: inline-block;
+  animation: spinSlow 1s linear infinite;
+  font-size: 14px;
+  color: var(--accent-bright);
+}
 .agentAction_done .agentActionIcon {
   background: var(--green-muted);
 }
@@ -1706,6 +1712,16 @@
 @keyframes typeBounce {
   0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
   40% { transform: translateY(-4px); opacity: 1; }
+}
+
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ─── Context Card (inline in chat) ─── */

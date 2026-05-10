@@ -13,9 +13,10 @@ import { useCockpitState } from './hooks/useCockpitState';
 import { useChatContext } from './hooks/useChatContext';
 import { useGitHub } from './hooks/useGitHub';
 import { useModels } from './hooks/useModels';
+import { useActionLog, useActionLogSync, toolEventToEntry, uiActionToEntry } from './hooks/useActionLog';
 import { TopNav, type AppMode } from './components/TopNav';
 import { ChatCenter } from './components/ChatCenter';
-import { AgentActionsPanel, toolEventToEntry, uiActionToEntry, type ActionLogEntry } from './components/AgentActionsPanel';
+import { AgentActionsPanel } from './components/AgentActionsPanel';
 import { RightPanel } from './components/RightPanel';
 import { ModuleDashboard } from './components/ModuleDashboard';
 import { BootScreen } from './components/BootScreen';
@@ -36,7 +37,8 @@ export function ChatShell() {
   const [search] = useState('');
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  const [actionLog, setActionLog] = useState<ActionLogEntry[]>([]);
+
+  const actionLog = useActionLog();
 
   const { ghStatus, ghCommit } = useGitHub();
   const { models } = useModels();
@@ -61,23 +63,20 @@ export function ChatShell() {
   // Log UI actions to the panel
   const onUiActions = useCallback(
     (actions: XenaUiAction[]) => {
-      // Log each action to the panel
-      setActionLog((prev) => [
-        ...prev,
-        ...actions.map(uiActionToEntry),
-      ]);
-      // Dispatch to cockpit state
+      for (const action of actions) {
+        actionLog.addEntry(uiActionToEntry(action));
+      }
       void cockpit.dispatchUiActions(actions);
     },
-    [cockpit],
+    [cockpit, actionLog],
   );
 
   // Log tool execution events to the panel
   const onXenaAction = useCallback(
     (event: XenaActionEvent) => {
-      setActionLog((prev) => [...prev, toolEventToEntry(event)]);
+      actionLog.addEntry(toolEventToEntry(event));
     },
-    [],
+    [actionLog],
   );
 
   const chat = useChat(selectedModel, {
@@ -111,6 +110,9 @@ export function ChatShell() {
   });
 
   const boot = useBootSequence();
+
+  // Sync action log with chat state (presence changes, new messages)
+  useActionLogSync(actionLog, chat.presence, chat.messages);
 
   // Preload all telecom views on mount
   useEffect(() => {
@@ -177,7 +179,7 @@ export function ChatShell() {
         {isXenaMode ? (
           <>
             {/* Left: Agent actions log */}
-            <AgentActionsPanel actions={actionLog} />
+            <AgentActionsPanel actions={actionLog.actions} />
 
             <div className={styles.chatColumn}>
               <AgentActivityBar activity={cockpit.agentActivity} />
