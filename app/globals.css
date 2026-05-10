@@ -72,6 +72,15 @@
   --nav-height: 56px;
   --panel-width: 340px;
   --chat-max-width: 760px;
+
+  /* ─── Hover / overlay tints ─── */
+  --tint-hover: rgba(255, 255, 255, 0.04);
+  --tint-hover-strong: rgba(255, 255, 255, 0.06);
+  --tint-surface: rgba(255, 255, 255, 0.03);
+  --tint-focus-bg: rgba(56, 97, 251, 0.08);
+  --tint-focus-bg-strong: rgba(56, 97, 251, 0.12);
+  --tint-focus-border: rgba(56, 97, 251, 0.15);
+  --tint-focus-glow: rgba(56, 97, 251, 0.08);
 }
 
 [data-theme="light"] {
@@ -113,6 +122,15 @@
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
   --shadow-glow: 0 0 16px rgba(56, 97, 251, 0.08);
+
+  /* ─── Hover / overlay tints ─── */
+  --tint-hover: rgba(0, 0, 0, 0.04);
+  --tint-hover-strong: rgba(0, 0, 0, 0.06);
+  --tint-surface: rgba(0, 0, 0, 0.02);
+  --tint-focus-bg: rgba(56, 97, 251, 0.06);
+  --tint-focus-bg-strong: rgba(56, 97, 251, 0.1);
+  --tint-focus-border: rgba(56, 97, 251, 0.2);
+  --tint-focus-glow: rgba(56, 97, 251, 0.06);
 }
 
 * {

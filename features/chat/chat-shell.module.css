@@ -82,7 +82,7 @@
 .topNavTabs {
   display: flex;
   gap: 2px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--tint-surface);
   border-radius: var(--radius);
   padding: 3px;
 }
@@ -106,13 +106,13 @@
 
 .topNavTab:hover {
   color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--tint-hover);
 }
 
 .topNavTabActive {
   color: var(--text);
   background: linear-gradient(135deg, rgba(56, 97, 251, 0.14), rgba(56, 97, 251, 0.06));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 0 20px rgba(56, 97, 251, 0.08);
+  box-shadow: inset 0 1px 0 var(--tint-hover-strong), 0 0 20px rgba(56, 97, 251, 0.08);
 }
 
 .topNavTabIcon {
@@ -147,7 +147,7 @@
   font-family: 'SF Mono', 'Fira Code', monospace;
   font-size: 11px;
   color: var(--text-tertiary);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--tint-hover);
   padding: 3px 8px;
   border-radius: 6px;
 }
@@ -172,6 +172,142 @@
 .themeToggle:hover {
   background: rgba(56, 97, 251, 0.06); color: var(--accent-bright);
   border-color: var(--border-focus);
+}
+
+/* ─── Agent Actions Panel (left) ─── */
+.agentActionsPanel {
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.agentActionsHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.agentActionsDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green-glow);
+  animation: dotPulse 2s ease-in-out infinite;
+}
+.agentActionsTitle {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+}
+.agentActionsCount {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 5px;
+  background: var(--tint-focus-bg);
+  color: var(--accent-bright);
+}
+.agentActionsList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.agentActionsEmpty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.agentActionsEmptyIcon {
+  font-size: 24px;
+  opacity: 0.4;
+}
+
+.agentActionEntry {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  transition: border-color 0.15s;
+  animation: slideUp 0.2s ease both;
+}
+.agentActionEntry:hover {
+  border-color: var(--border-focus);
+}
+.agentAction_running {
+  border-left: 3px solid var(--accent);
+}
+.agentAction_done {
+  border-left: 3px solid var(--green);
+}
+.agentAction_error {
+  border-left: 3px solid var(--red);
+}
+
+.agentActionIcon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  background: var(--tint-focus-bg);
+  flex-shrink: 0;
+}
+.agentAction_done .agentActionIcon {
+  background: var(--green-muted);
+}
+.agentAction_error .agentActionIcon {
+  background: var(--red-muted);
+}
+
+.agentActionContent {
+  flex: 1;
+  min-width: 0;
+}
+.agentActionLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+}
+.agentActionDetail {
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--text-tertiary);
+  font-family: ui-monospace, 'SF Mono', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.agentActionTime {
+  font-size: 9px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding-top: 2px;
 }
 
 /* ─── Side Panels ─── */
@@ -297,7 +433,7 @@
 .contextTab:hover {
   color: var(--text-secondary);
   border-color: var(--border);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--tint-hover);
 }
 
 .contextTabActive {
@@ -337,7 +473,7 @@
 }
 
 .activityEntry:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--tint-hover);
 }
 
 .activityEntryHead {
@@ -475,7 +611,7 @@
 
 .searchResultRow:hover {
   border-color: var(--border);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--tint-hover);
 }
 
 .searchResultRowActive {
@@ -632,7 +768,7 @@
 }
 
 .msg_user .chatMsgAvatar {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--tint-hover-strong);
   color: var(--text);
 }
 
@@ -662,7 +798,7 @@
   line-height: 1.65;
   white-space: pre-wrap;
   word-break: break-word;
-  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  box-shadow: var(--shadow-sm), inset 0 1px 0 var(--tint-surface);
   transition: border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
 }
 
@@ -713,7 +849,7 @@
   border-radius: var(--radius-lg);
   background: linear-gradient(180deg, rgba(16, 24, 42, 0.95) 0%, rgba(10, 16, 28, 0.9) 100%);
   border: 1px solid var(--border);
-  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow: var(--shadow-md), inset 0 1px 0 var(--tint-hover);
   transition: border-color var(--duration) var(--ease-out), box-shadow var(--duration) var(--ease-out);
 }
 
@@ -1244,7 +1380,7 @@
   border-radius: 8px;
   font-size: 11px;
   font-weight: 700;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--tint-hover);
   color: var(--text-tertiary);
 }
 
@@ -1437,7 +1573,7 @@
   width: 100%;
   height: 4px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--tint-hover-strong);
   overflow: hidden;
   margin-top: 8px;
 }
@@ -1710,6 +1846,9 @@
 }
 
 @media (max-width: 900px) {
+  .agentActionsPanel {
+    display: none;
+  }
   .sidePanel {
     display: none;
   }
@@ -1739,7 +1878,7 @@
   padding: 6px 12px;
   border-radius: var(--radius);
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--tint-hover);
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 600;
@@ -1810,7 +1949,7 @@
 }
 
 .modelOption:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--tint-hover-strong);
   color: var(--text-primary);
 }
 
