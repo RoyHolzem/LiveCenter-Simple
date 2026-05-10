@@ -1877,6 +1877,211 @@
   font-weight: 500;
 }
 
+/* ─── Severity / Status badges (shared) ─── */
+.sevBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.statusBadgeChip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.tone_critical { background: rgba(255,64,87,0.12); color: #ff4057; }
+.tone_major    { background: rgba(255,176,32,0.12); color: #ffb020; }
+.tone_minor    { background: rgba(56,97,251,0.12); color: #5b7ffc; }
+.tone_info     { background: rgba(0,212,255,0.12); color: #00d4ff; }
+
+.stat_OPEN          { background: rgba(255,64,87,0.1); color: #ff4057; }
+.stat_ACKNOWLEDGED  { background: rgba(255,176,32,0.1); color: #ffb020; }
+.stat_IN_PROGRESS   { background: rgba(56,97,251,0.1); color: #5b7ffc; }
+.stat_RESOLVED      { background: rgba(0,230,138,0.1); color: #00e68a; }
+.stat_CLOSED        { background: rgba(92,107,138,0.1); color: #5c6b8a; }
+
+/* ─── Side Panel (Right) ─── */
+.sidePanel {
+  position: relative;
+  width: var(--panel-width);
+  flex-shrink: 0;
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideLeft 0.3s var(--ease-out) both;
+}
+.sidePanelVisible {
+  display: flex;
+}
+
+/* ─── Record Overlay ─── */
+.recordOverlay {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.recordOverlayCard {
+  padding: 20px 16px;
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  margin: 12px;
+  animation: cardSlideIn 0.3s var(--ease-out) both;
+  overflow-y: auto;
+  flex: 1;
+}
+.recordOverlayHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.recordOverlayClose {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  transition: all 0.15s;
+}
+.recordOverlayClose:hover {
+  background: var(--tint-hover-strong);
+  color: var(--text);
+}
+.recordOverlayTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.35;
+  padding-right: 36px;
+}
+.recordOverlayType {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent-bright);
+  margin-bottom: 4px;
+}
+.recordOverlayBadges {
+  display: flex;
+  gap: 5px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.recordOverlayBody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.recordOverlayRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.recordOverlayRow:last-child {
+  border-bottom: none;
+}
+.recordOverlayLabel {
+  color: var(--text-tertiary);
+}
+.recordOverlayValue {
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-align: right;
+  max-width: 60%;
+}
+.recordOverlayNotice {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(255,176,32,0.06);
+  border: 1px solid rgba(255,176,32,0.1);
+}
+.recordOverlayNoticeLabel {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
+}
+.recordOverlayNotice p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ─── Context Card ─── */
+.contextCard {
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  padding: 14px;
+  margin-top: 8px;
+}
+.contextCardCompact {
+  padding: 10px;
+}
+.contextCardType {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent-bright);
+  margin-bottom: 4px;
+}
+.contextCardTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+  margin-bottom: 6px;
+}
+.contextCardBadges {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.contextCardMeta {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  line-height: 1.5;
+}
+.contextCardMeta strong {
+  color: var(--text-secondary);
+}
+.contextCardNotice {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(255,176,32,0.06);
+  border: 1px solid rgba(255,176,32,0.1);
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
 /* ─── Responsive ─── */
 @media (max-width: 1200px) {
   .panelVisible {
