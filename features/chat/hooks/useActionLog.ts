@@ -175,15 +175,23 @@ export function useActionLogSync(
       const pollCloudWatch = async (attempt: number) => {
         try {
           const token = await getAuthToken();
-          if (!token) return;
+          if (!token) {
+            console.warn('[action-log] No auth token');
+            return;
+          }
           const res = await fetch('/api/api-logs', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ afterTimestamp: chatStartTime }),
           });
+          if (!res.ok) {
+            console.warn('[action-log] API returned', res.status, await res.text());
+            if (attempt < 3) setTimeout(() => pollCloudWatch(attempt + 1), 15000);
+            return;
+          }
           const data: { events?: Array<Record<string, string>> } = await res.json();
           if (!data.events || data.events.length === 0) {
-            if (attempt < 2) {
+            if (attempt < 3) {
               setTimeout(() => pollCloudWatch(attempt + 1), 15000);
             }
             return;
