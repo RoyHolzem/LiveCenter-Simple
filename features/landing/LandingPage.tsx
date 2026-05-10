@@ -69,7 +69,7 @@ export function LandingPage({ onAuthenticated }: { onAuthenticated: () => void }
             <XenaLogo size={42} withWordmark className={styles.brandLogo} />
           </a>
           <div className="d-flex align-items-center gap-2 ms-auto">
-            <button className="btn btn-sm btn-outline-light" onClick={() => setAuthMode('signin')} type="button">Sign in</button>
+            <button className="btn btn-sm btn-outline-dark" onClick={() => setAuthMode('signin')} type="button">Sign in</button>
             <button className="btn btn-sm btn-primary" onClick={() => setAuthMode('signup')} type="button">Create account</button>
           </div>
         </div>
