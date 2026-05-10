@@ -104,6 +104,7 @@ export function useActionLogSync(
   actionLog: ReturnType<typeof useActionLog>,
   presence: 'idle' | 'processing' | 'typing' | 'error',
   messages: Array<{ id: string; role: string; content: string; createdAt: string }>,
+  getAuthToken: () => Promise<string | null>,
 ) {
   const prevPresenceRef = useRef(presence);
   const processedRef = useRef<Set<string>>(new Set());
@@ -144,6 +145,7 @@ export function useActionLogSync(
   }, [presence, actionLog]);
 
   // Parse completed assistant messages for record IDs
+  // AND poll CloudWatch for real API Gateway access logs
   useEffect(() => {
     for (const msg of messages) {
       if (msg.role !== 'assistant') continue;
@@ -164,6 +166,44 @@ export function useActionLogSync(
           icon: action.icon,
         });
       }
+
+      // Poll CloudWatch for real API Gateway logs
+      const msgTime = new Date(msg.createdAt).getTime();
+      const chatStartTime = msgTime - 5000;
+
+      (async () => {
+        try {
+          const token = await getAuthToken();
+          if (!token) return;
+          const res = await fetch('/api/api-logs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ afterTimestamp: chatStartTime }),
+          });
+          const data: { events?: Array<Record<string, string>> } = await res.json();
+          if (!data.events || data.events.length === 0) return;
+          for (const evt of data.events) {
+            const method = evt.httpMethod || 'GET';
+            const route = evt.routeKey || 'unknown';
+            const status = evt.status || '?';
+            const latency = evt.integrationLatency || '?';
+            const requestTime = evt.requestTime || '';
+            const path = route.includes(' ') ? route.split(' ').slice(1).join(' ') : route;
+            actionLog.addEntry({
+              source: 'api',
+              label: `${method} ${path}`,
+              detail: `${status} · ${latency}ms`,
+              expanded: `{\n  "method": "${method}",\n  "route": "${route}",\n  "path": "${path}",\n  "status": ${status},\n  "latency": "${latency}ms",\n  "requestId": "${evt.requestId || ''}",\n  "timestamp": "${requestTime}"\n}`,
+              status: String(status).startsWith('2') ? 'done' : 'error',
+              icon: method === 'GET' ? '⬇' : method === 'POST' ? '⬆' : method === 'PUT' ? '✏️' : '▸',
+            });
+          }
+        } catch (err) {
+          console.error('[action-log] CloudWatch poll failed:', err);
+        }
+      })();
+
+      break; // Only process the latest unprocessed assistant message
     }
-  }, [messages, presence, actionLog]);
+  }, [messages, presence, actionLog, getAuthToken]);
 }

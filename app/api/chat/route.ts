@@ -215,72 +215,16 @@ export async function POST(request: Request) {
       }
 
       // Pipe through the stream transformer:
-      // 1. Inject synthetic action events based on user's message
-      // 2. Inject xena_ui actions when record IDs appear in delta content
-      // 3. Forward tool_calls from OpenAI-format deltas
+      // 1. Inject xena_ui actions when record IDs appear in delta content
+      // 2. Forward tool_calls from OpenAI-format deltas
       const seen = new Set<string>();
       const reader = response.body!.getReader();
       let buffer = '';
 
-      // Analyze the last user message to predict which APIs the operator will call
-      const lastUserMsg = body.messages?.filter(m => m.role === 'user').pop()?.content?.toLowerCase() || '';
-      const syntheticActions: Array<{ verb: string; label: string; detail: string; category: string }> = [];
-      
-      if (lastUserMsg.includes('incident')) {
-        syntheticActions.push({ verb: 'queried', label: 'GET /incidents', detail: 'Fetching incidents...', category: 'apigateway' });
-      }
-      if (lastUserMsg.includes('event') && !lastUserMsg.includes('incident')) {
-        syntheticActions.push({ verb: 'queried', label: 'GET /events', detail: 'Fetching events...', category: 'apigateway' });
-      }
-      if (lastUserMsg.includes('maintenance') || lastUserMsg.includes('planned work')) {
-        syntheticActions.push({ verb: 'queried', label: 'GET /planned-works', detail: 'Fetching maintenance...', category: 'apigateway' });
-      }
-      if (lastUserMsg.includes('order')) {
-        syntheticActions.push({ verb: 'queried', label: 'GET /orders', detail: 'Fetching orders...', category: 'apigateway' });
-      }
-      if (lastUserMsg.includes('weather')) {
-        syntheticActions.push({ verb: 'fetched', label: 'web_fetch', detail: 'Fetching weather data...', category: 'general' });
-      }
-      if (lastUserMsg.includes('search') || lastUserMsg.includes('find') || lastUserMsg.includes('look up')) {
-        syntheticActions.push({ verb: 'searched', label: 'web_search', detail: 'Searching the web...', category: 'general' });
-      }
-      
-      // If no specific patterns matched, the operator is probably querying telecom data
-      if (syntheticActions.length === 0) {
-        syntheticActions.push({ verb: 'queried', label: 'GET /incidents', detail: 'Loading context...', category: 'apigateway' });
-      }
-
       const injectedStream = new ReadableStream({
-        async start(controller) {
-          // Inject synthetic tool actions at the start of the stream
-          for (const action of syntheticActions) {
-            const payload = JSON.stringify({
-              type: 'action',
-              verb: action.verb,
-              category: action.category,
-              label: action.label,
-              detail: action.detail,
-              timestamp: new Date().toISOString(),
-            });
-            controller.enqueue(new TextEncoder().encode(`data: ${payload}\n\n`));
-          }
-        },
-
         async pull(controller) {
           const { done, value } = await reader.read();
           if (done) {
-            // Inject completion events for all synthetic actions
-            for (const action of syntheticActions) {
-              const payload = JSON.stringify({
-                type: 'action',
-                verb: 'completed',
-                category: action.category,
-                label: `${action.label} → 200 OK`,
-                detail: 'Request completed',
-                timestamp: new Date().toISOString(),
-              });
-              controller.enqueue(new TextEncoder().encode(`data: ${payload}\n\n`));
-            }
             controller.close();
             return;
           }

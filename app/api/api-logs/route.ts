@@ -1,0 +1,49 @@
+import { CloudWatchLogsClient, FilterLogEventsCommand } from '@aws-sdk/client-cloudwatch-logs';
+import { verifyToken } from '@/lib/cognito-jwt';
+
+const cwLogs = new CloudWatchLogsClient({ region: 'eu-central-1' });
+
+export async function POST(request: Request) {
+  // Verify auth
+  const authHeader = request.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return Response.json({ error: 'Missing auth token' }, { status: 401 });
+  }
+
+  try {
+    await verifyToken(authHeader.slice(7));
+  } catch {
+    return Response.json({ error: 'Invalid token' }, { status: 401 });
+  }
+
+  const { afterTimestamp }: { afterTimestamp?: number } = await request.json();
+
+  // Query CloudWatch for API Gateway access logs since the given timestamp
+  const startTime = afterTimestamp || Date.now() - 60_000;
+
+  try {
+    const result = await cwLogs.send(
+      new FilterLogEventsCommand({
+        logGroupName: '/aws/apigateway/xena-ops-api',
+        startTime,
+        filterPattern: '{ $.httpMethod = "*" }',
+        limit: 50,
+      }),
+    );
+
+    const events = (result.events || [])
+      .map((e) => {
+        try {
+          return JSON.parse(e.message || '{}');
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
+
+    return Response.json({ events });
+  } catch (err) {
+    console.error('[api-logs] CloudWatch query failed:', err);
+    return Response.json({ events: [], error: String(err) }, { status: 500 });
+  }
+}

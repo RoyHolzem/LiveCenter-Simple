@@ -102,7 +102,7 @@ export function ChatShell() {
   const boot = useBootSequence();
 
   // Sync action log with chat state
-  useActionLogSync(actionLog, chat.presence, chat.messages);
+  useActionLogSync(actionLog, chat.presence, chat.messages, getAuthToken);
 
   useEffect(() => {
     const views: TelecomView[] = ['incidents', 'events', 'planned-works'];
