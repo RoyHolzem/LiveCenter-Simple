@@ -71,9 +71,9 @@
 }
 
 .navScrolled {
-  background: rgba(247, 248, 251, 0.8);
+  background: rgba(4, 6, 12, 0.85);
   backdrop-filter: saturate(160%) blur(14px);
-  border-bottom-color: var(--x-line);
+  border-bottom-color: rgba(255,255,255,0.06);
 }
 
 .navInner {
@@ -121,32 +121,32 @@
 /* ─── Buttons ─── */
 .btnGhost {
   padding: 9px 16px;
-  border: none;
+  border: 1px solid rgba(255,255,255,0.15);
   background: transparent;
-  color: var(--x-ink);
+  color: rgba(255,255,255,0.7);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   border-radius: 999px;
-  transition: background 0.2s;
+  transition: all 0.2s;
 }
-.btnGhost:hover { background: rgba(14, 35, 71, 0.05); }
+.btnGhost:hover { background: rgba(255,255,255,0.06); color: #fff; border-color: rgba(255,255,255,0.25); }
 
 .btnPrimary {
   padding: 10px 20px;
   border: none;
   border-radius: 999px;
-  background: var(--x-navy);
-  color: #fff;
+  background: #fff;
+  color: #0a0e17;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
 }
 .btnPrimary:hover {
-  background: #142b53;
+  background: #e8e8e8;
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(14, 35, 71, 0.18);
+  box-shadow: 0 6px 20px rgba(255,255,255,0.12);
 }
 
 .btnPrimaryLarge {
@@ -899,6 +899,47 @@
 .footerCopy {
   font-size: 12px;
   color: var(--x-muted);
+}
+
+/* ─── Showcase (fluid full-page agentic card) ─── */
+.showcase {
+  min-height: calc(100vh - 72px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px 60px;
+  gap: 40px;
+  background: linear-gradient(180deg, #0a0e17 0%, #060a12 100%);
+}
+.showcaseContent {
+  text-align: center;
+  animation: fadeIn 0.6s ease both;
+}
+.showcaseTitle {
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.15;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+.showcaseSub {
+  margin-top: 12px;
+  font-size: 16px;
+  color: rgba(255,255,255,0.5);
+  line-height: 1.6;
+}
+.opsCardFluid {
+  width: 100%;
+  max-width: 1100px;
+  border-radius: 16px;
+  background: rgba(12, 18, 32, 0.9);
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 24px 80px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.04);
+  overflow: hidden;
+  animation: scaleIn 0.5s cubic-bezier(0.16,1,0.3,1) both;
+  animation-delay: 0.15s;
 }
 
 /* ─── Animations ─── */

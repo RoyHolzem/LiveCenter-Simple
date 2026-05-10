@@ -32,7 +32,6 @@ export function LandingPage({ onAuthenticated }: { onAuthenticated: () => void }
   useEffect(() => {
     const onScroll = () => setScrollY(window.scrollY);
     document.body.style.overflow = 'auto';
-    document.documentElement.setAttribute('data-theme', 'light');
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       document.body.style.overflow = 'hidden';
@@ -66,76 +65,27 @@ export function LandingPage({ onAuthenticated }: { onAuthenticated: () => void }
             <XenaLogo size={32} />
             <span className={styles.logoDot}>.</span>
           </div>
-          <div className={styles.navLinks}>
-            <a href="#platform">Platform</a>
-            <a href="#agents">Agents</a>
-            <a href="#security">Security</a>
-            <a href="#customers">Customers</a>
-            <a href="#pricing">Pricing</a>
-          </div>
           <div className={styles.navActions}>
             <button className={styles.btnGhost} onClick={() => setAuthMode('signin')}>Sign in</button>
-            <button className={styles.btnPrimary} onClick={() => setAuthMode('signup')}>Book a demo</button>
+            <button className={styles.btnPrimary} onClick={() => setAuthMode('signup')}>Get started</button>
           </div>
         </div>
       </nav>
 
-      {/* ─── Hero ─── */}
-      <section className={styles.hero}>
-        <div className={styles.heroBg}>
-          <div className={styles.heroGrid} />
-          <div className={styles.heroAura} />
-          <div className={styles.warpField}>
-            {Array.from({ length: 6 }).map((_, i) => (
-              <span key={i} className={styles.warpRing} style={{ animationDelay: `${i * 1.4}s` }} />
-            ))}
-          </div>
-        </div>
-
-        <div className={styles.heroContent}>
-          <a href="#platform" className={styles.heroPill}>
-            <span className={styles.heroPillDot} />
-            New · Xena 3 — Multi-agent orchestration
-            <span className={styles.heroPillArrow}>→</span>
-          </a>
-
-          <h1 className={styles.heroTitle}>
-            <GlitchWord text="The agentic cockpit" />
-            <br />
-            for modern operations.
+      {/* ─── Fluid agentic showcase ─── */}
+      <section className={styles.showcase}>
+        <div className={styles.showcaseContent}>
+          <h1 className={styles.showcaseTitle}>
+            <GlitchWord text="Agentic" /> operations cockpit.
           </h1>
-
-          <p className={styles.heroSub}>
-            Deploy, observe and govern fleets of AI agents that
+          <p className={styles.showcaseSub}>
+            AI agents that run your back-office — from ticket triage to network ops.
             <br />
-            run your back-office — from ticket triage to financial
-            <br />
-            close. Enterprise-grade. Human-in-the-loop.
+            Real tools, real actions, real-time.
           </p>
-
-          <div className={styles.heroActions}>
-            <button className={styles.btnPrimaryLarge} onClick={() => setAuthMode('signup')}>
-              Start free pilot
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M5 12h14M12 5l7 7-7 7" />
-              </svg>
-            </button>
-            <button className={styles.btnSecondaryLarge} onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-              Watch 90-sec tour
-            </button>
-          </div>
-
-          <div className={styles.complianceRow}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2 4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6l-8-4z" />
-            </svg>
-            SOC 2 Type II · ISO 27001 · HIPAA · EU AI Act ready
-          </div>
         </div>
 
-        {/* ─── Operations card (the agentic visuals) ─── */}
-        <div id="demo" className={styles.opsCard}>
+        <div className={styles.opsCardFluid}>
           <div className={styles.opsCardInner}>
             <aside className={styles.opsSidebar}>
               <div className={styles.opsSidebarHeader}>
@@ -201,7 +151,7 @@ export function LandingPage({ onAuthenticated }: { onAuthenticated: () => void }
                 </svg>
               </div>
 
-              {/* Streaming agent task — keep the agentic chat-card vibe */}
+              {/* Streaming agent task */}
               <div className={styles.opsTask}>
                 <div className={styles.opsTaskAvatar}>
                   <XenaLogo size={20} withWordmark={false} />
@@ -219,104 +169,6 @@ export function LandingPage({ onAuthenticated }: { onAuthenticated: () => void }
           </div>
         </div>
       </section>
-
-      {/* ─── Logos / social proof ─── */}
-      <section className={styles.logos}>
-        <div className={styles.logosInner}>
-          <div className={styles.logosLabel}>Operating across regulated industries</div>
-          <div className={styles.logosRow}>
-            {['NorthBank', 'Helio', 'Avant', 'Polaris', 'Meridian', 'Quanta'].map(n => (
-              <span key={n} className={styles.logoChip}>{n}</span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Platform ─── */}
-      <section id="platform" className={styles.section}>
-        <div className={styles.sectionInner}>
-          <div className={styles.sectionLabel}>Platform</div>
-          <h2 className={styles.sectionTitle}>One control plane for every agent you ship.</h2>
-          <p className={styles.sectionSub}>
-            Xena gives operators a single cockpit to deploy, observe and govern AI agents — across
-            tools, models and teams. Built for production, not demos.
-          </p>
-          <div className={styles.featuresGrid}>
-            <FeatureCard title="Agentic Operator"
-              desc="Real tools, not suggestions — web_post, web_put, web_fetch and your own. Agents execute, log, and hand off." />
-            <FeatureCard title="Streaming UI"
-              desc="Server-sent events with token deltas and xena_ui control lines. Watch the operator think and act in real time." />
-            <FeatureCard title="Enterprise Security"
-              desc="Cognito auth, JWT on every route, Secrets Manager, least-privilege IAM. Zero exposed secrets." />
-            <FeatureCard title="Fully Serverless"
-              desc="Lambda + API Gateway + DynamoDB. Auto-scaling. Pay per task. Provisioned via CloudFormation." />
-            <FeatureCard title="Modular VPS Layer"
-              desc="Detachable OpenClaw gateway. Swap models, add plugins, customise agents — without touching the cloud stack." />
-            <FeatureCard title="CI/CD &amp; IaC"
-              desc="GitHub → Amplify auto-deploy. CloudFormation for AWS. Lambda direct deploy for the API. Infra as code, always." />
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Security ─── */}
-      <section id="security" className={styles.sectionAlt}>
-        <div className={styles.sectionInner}>
-          <div className={styles.sectionLabel}>Security &amp; compliance</div>
-          <h2 className={styles.sectionTitle}>Trust is not optional.</h2>
-          <div className={styles.securityGrid}>
-            <SecurityItem title="Zero exposed credentials"
-              desc="No NEXT_PUBLIC_ secrets. Gateway tokens and API keys live in AWS Secrets Manager, fetched server-side." />
-            <SecurityItem title="JWT on every route"
-              desc="Every API call verifies the Cognito access token before proceeding. Unauth requests are rejected at the server." />
-            <SecurityItem title="Least-privilege IAM"
-              desc="The Operations API Lambda can only Get / Put / Update / Query / Scan four specific DynamoDB tables. Nothing else." />
-            <SecurityItem title="DSGVO &amp; ISO 27001"
-              desc="Data stays in eu-central-1. No cross-region replication. Audit trail through CloudTrail and Lambda logs." />
-            <SecurityItem title="Sandboxed agent"
-              desc="The operator runs in an OpenClaw Docker sandbox — no shell access, no AWS credentials, no arbitrary code." />
-            <SecurityItem title="Governance &amp; audit"
-              desc="All API calls are logged. DynamoDB streams track every record change. Fully auditable, governance-compliant paths." />
-          </div>
-        </div>
-      </section>
-
-      {/* ─── CTA ─── */}
-      <section id="pricing" className={styles.cta}>
-        <div className={styles.ctaInner}>
-          <h2 className={styles.ctaTitle}>
-            <GlitchWord text="Ready" /> to put your operations on autopilot?
-          </h2>
-          <p className={styles.ctaSub}>Deploy in minutes. Start talking to your infrastructure.</p>
-          <div className={styles.ctaActions}>
-            <button className={styles.btnPrimaryLarge} onClick={() => setAuthMode('signup')}>
-              Start free pilot
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M5 12h14M12 5l7 7-7 7" />
-              </svg>
-            </button>
-            <button className={styles.btnSecondaryLarge} onClick={() => setAuthMode('signin')}>Sign in</button>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Footer ─── */}
-      <footer className={styles.footer}>
-        <div className={styles.footerInner}>
-          <div className={styles.footerBrand}>
-            <XenaLogo size={26} />
-          </div>
-          <div className={styles.footerLinks}>
-            <a href="#platform">Platform</a>
-            <a href="#agents">Agents</a>
-            <a href="#security">Security</a>
-            <a href="#customers">Customers</a>
-            <a href="#pricing">Pricing</a>
-          </div>
-          <div className={styles.footerCopy}>
-            © {new Date().getFullYear()} Xena · Built on AWS · OpenClaw Powered
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
@@ -384,32 +236,6 @@ function Kpi({ label, value, delta, positive }: { label: string; value: string; 
       <div className={styles.kpiLabel}>{label}</div>
       <div className={styles.kpiValue}>{value}</div>
       <div className={`${styles.kpiDelta} ${positive ? styles.kpiDeltaUp : ''}`}>{delta}</div>
-    </div>
-  );
-}
-
-function FeatureCard({ title, desc }: { title: string; desc: string }) {
-  return (
-    <div className={styles.featureCard}>
-      <div className={styles.featureMark}>
-        <XenaLogo size={20} withWordmark={false} />
-      </div>
-      <h3>{title}</h3>
-      <p>{desc}</p>
-    </div>
-  );
-}
-
-function SecurityItem({ title, desc }: { title: string; desc: string }) {
-  return (
-    <div className={styles.securityItem}>
-      <div className={styles.securityMark}>
-        <XenaLogo size={18} withWordmark={false} />
-      </div>
-      <div>
-        <h4>{title}</h4>
-        <p>{desc}</p>
-      </div>
     </div>
   );
 }
