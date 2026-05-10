@@ -206,6 +206,7 @@ export function useChat(selectedModel: string = 'inceptionlabs/mercury-2', optio
           if (!line) continue;
           const raw = line.slice(5).trim();
           if (!raw || raw === '[DONE]') {
+            console.log('[chat] SSE stream done');
             setPresence('idle');
             onResponseDone?.();
             continue;
@@ -213,26 +214,30 @@ export function useChat(selectedModel: string = 'inceptionlabs/mercury-2', optio
 
           try {
             const parsed = JSON.parse(raw);
+            // Debug: log every SSE event
+            const pType = (parsed as any).type;
+            const delta = (parsed as any).choices?.[0]?.delta;
+            const hasToolCalls = delta?.tool_calls;
+            if (pType || hasToolCalls || !delta?.content) {
+              console.log('[chat] SSE:', pType ? `type=${pType}` : 'no-type', hasToolCalls ? `TOOL_CALLS=${JSON.stringify(hasToolCalls)}` : '', !delta?.content ? `keys=[${Object.keys(parsed).join(',')}]` : '');
+            }
+
             const sseLine = parseSseDataObject(parsed);
             if (sseLine.kind === 'xena_ui') {
-              console.log('[chat] xena_ui:', sseLine.actions);
               onUiActions?.(sseLine.actions);
               continue;
             }
             if (sseLine.kind === 'action') {
-              console.log('[chat] action:', sseLine.event.verb, sseLine.event.label);
               onXenaAction?.(sseLine.event);
               continue;
             }
             if (sseLine.kind === 'tool_call') {
-              console.log('[chat] tool_call:', sseLine.calls.map(c => c.name));
               for (const tc of sseLine.calls) {
                 onToolCall?.({ id: tc.id || `tc-${Date.now()}`, name: tc.name, arguments: tc.arguments || '' });
               }
               continue;
             }
             if (sseLine.kind === 'tool_result') {
-              console.log('[chat] tool_result:', sseLine.name);
               onToolResult?.({ id: sseLine.id, name: sseLine.name, content: sseLine.content });
               continue;
             }
