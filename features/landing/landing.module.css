@@ -130,6 +130,12 @@
   gap: 11px;
 }
 
+.logoWordmarkNav {
+  height: 30px;
+  width: auto;
+  display: block;
+}
+
 .logoGlyph {
   width: 36px;
   height: 36px;
@@ -1240,6 +1246,12 @@
   font-size: 14px;
   color: var(--text-secondary);
   letter-spacing: 0.18em;
+}
+
+.logoWordmarkFooter {
+  height: 24px;
+  width: auto;
+  display: block;
 }
 
 .footerBrand .logoGlyph {

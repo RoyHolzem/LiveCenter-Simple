@@ -93,6 +93,12 @@
   gap: 11px;
 }
 
+.topNavWordmark {
+  height: 26px;
+  width: auto;
+  display: block;
+}
+
 .topNavLogo {
   width: 32px;
   height: 32px;
@@ -1924,6 +1930,12 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.4);
   position: relative;
   z-index: 1;
+}
+
+.bootLogoWordmark {
+  height: 64px;
+  width: auto;
+  display: block;
 }
 
 .bootLogoGlow {

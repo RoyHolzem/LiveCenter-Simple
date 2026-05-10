@@ -1,9 +1,10 @@
 'use client';
 
 import type { BootStep, BootState } from '../hooks/useBootSequence';
-import { XenaLogo } from '@/features/landing/XenaLogo';
+import Image from 'next/image';
 import { cn } from '../chat-utils';
 import styles from '../chat-shell.module.css';
+import logo from '@/app/logo.png';
 
 interface BootScreenProps {
   bootState: BootState;
@@ -31,7 +32,14 @@ export function BootScreen({ bootState, steps, progress, onStart, assistantName 
     <div className={styles.bootScreen}>
       <div className={styles.bootContainer}>
         <div className={styles.bootLogo}>
-          <XenaLogo size={88} withWordmark={false} className={styles.bootLogoMark} />
+          <div className={styles.bootLogoCircle}>
+            <Image
+              src={logo}
+              alt="Xena"
+              className={styles.bootLogoWordmark}
+              priority
+            />
+          </div>
           <div className={styles.bootLogoGlow} />
         </div>
 

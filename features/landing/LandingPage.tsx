@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { Authenticator } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 import styles from './landing.module.css';
+import logo from '@/app/logo.png';
 
 const formFields = {
   signIn: {
@@ -62,8 +64,12 @@ export function LandingPage({ onAuthenticated }: { onAuthenticated: () => void }
       <nav className={`${styles.nav} ${scrollY > 80 ? styles.navScrolled : ''}`}>
         <div className={styles.navInner}>
           <div className={styles.navLogo}>
-            <div className={styles.logoGlyph}>X</div>
-            <span className={styles.logoText}>XENA</span>
+            <Image
+              src={logo}
+              alt="Xena"
+              className={styles.logoWordmarkNav}
+              priority
+            />
           </div>
           <div className={styles.navLinks}>
             <a href="#features">Features</a>
@@ -304,8 +310,11 @@ export function LandingPage({ onAuthenticated }: { onAuthenticated: () => void }
       <footer className={styles.footer}>
         <div className={styles.footerInner}>
           <div className={styles.footerBrand}>
-            <div className={styles.logoGlyph}>X</div>
-            <span>XENA</span>
+            <Image
+              src={logo}
+              alt="Xena"
+              className={styles.logoWordmarkFooter}
+            />
           </div>
           <div className={styles.footerLinks}>
             <a href="#features">Features</a>
