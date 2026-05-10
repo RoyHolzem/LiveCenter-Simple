@@ -34,9 +34,19 @@ export function ChatShell() {
   const [contextView, setContextView] = useState<TelecomView>('incidents');
   const [search] = useState('');
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
   const { ghStatus, ghCommit } = useGitHub();
   const { models } = useModels();
+
+  // Theme toggle — sync to DOM data-theme attribute
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      return next;
+    });
+  }, []);
 
   const telecom = useTelecom(contextView, getAuthToken, search, {
     onContextViewChange: setContextView,
@@ -146,6 +156,8 @@ export function ChatShell() {
         selectedModel={selectedModel}
         setSelectedModel={setSelectedModel}
         modelFallback={chat.modelFallback}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       <div className={styles.body}>

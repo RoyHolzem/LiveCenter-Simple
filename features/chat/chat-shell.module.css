@@ -163,6 +163,17 @@
 .link_checking .topNavLinkDot { background: var(--amber); }
 .link_error .topNavLinkDot { background: var(--red); }
 
+/* ─── Theme Toggle ─── */
+.themeToggle {
+  width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border);
+  background: transparent; color: var(--text-tertiary); cursor: pointer;
+  display: grid; place-items: center; transition: all 0.15s;
+}
+.themeToggle:hover {
+  background: rgba(56, 97, 251, 0.06); color: var(--accent-bright);
+  border-color: var(--border-focus);
+}
+
 /* ─── Side Panels ─── */
 .sidePanel {
   width: 0;
