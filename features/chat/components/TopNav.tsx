@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import Image from 'next/image';
 import type { TelecomView } from '@/lib/types';
 import type { ModelInfo } from '../hooks/useModels';
+import { XenaLogo } from '@/features/landing/XenaLogo';
 import { cn } from '../chat-utils';
 import styles from '../chat-shell.module.css';
-import logo from '@/app/logo.png';
 
 export type AppMode = 'xena' | TelecomView;
 
@@ -70,12 +69,8 @@ export function TopNav({ mode, setMode, ghStatus, ghCommit, models, selectedMode
     <nav className={styles.topNav}>
       <div className={styles.topNavLeft}>
         <div className={styles.topNavBrand}>
-          <Image
-            src={logo}
-            alt="Xena"
-            className={styles.topNavWordmark}
-            priority
-          />
+          <XenaLogo size={34} withWordmark={false} className={styles.topNavLogoMark} />
+          <span className={styles.topNavAppName}>Xena</span>
         </div>
 
         <div className={styles.topNavDivider} />

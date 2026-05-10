@@ -239,3 +239,33 @@ a:hover { color: var(--accent-soft); }
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+:root {
+  --xena-red: #e30016;
+  --xena-red-soft: rgba(227, 0, 22, 0.13);
+  --xena-blue: #0799eb;
+  --xena-blue-soft: rgba(7, 153, 235, 0.14);
+  --xena-ink: #0b1d31;
+  --accent: var(--xena-blue);
+  --accent-bright: #22b7ff;
+  --accent-glow: rgba(7, 153, 235, 0.32);
+  --red: #e30016;
+  --red-glow: rgba(227, 0, 22, 0.24);
+}
+
+[data-theme="light"] {
+  --xena-ink: #0b1d31;
+  --accent: var(--xena-blue);
+  --accent-bright: #008fe8;
+  --accent-glow: rgba(7, 153, 235, 0.18);
+}
+
+.btn-primary {
+  --bs-btn-bg: var(--xena-blue);
+  --bs-btn-border-color: var(--xena-blue);
+  --bs-btn-hover-bg: #008fe8;
+  --bs-btn-hover-border-color: #008fe8;
+  --bs-btn-active-bg: #057ec2;
+  --bs-btn-active-border-color: #057ec2;
+  box-shadow: 0 14px 32px rgba(7, 153, 235, 0.22);
+}
