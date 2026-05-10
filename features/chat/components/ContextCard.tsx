@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import type { TelecomRecord, TelecomView } from '@/lib/types';
 import { cn } from '../chat-utils';
 import {
@@ -16,19 +17,31 @@ interface ContextCardProps {
 }
 
 export function ContextCard({ record, view, compact }: ContextCardProps) {
+  const [expanded, setExpanded] = useState(false);
+  const isExpanded = !compact || expanded;
+  const sevTone = severityTone(record.severity);
+
   const entityLabel =
     view === 'incidents' ? 'Incident'
     : view === 'events' ? 'Event'
+    : view === 'orders' ? 'Order'
     : 'Maintenance';
 
   const typeLabel = record.typeCode || entityLabel;
 
   return (
-    <div className={cn(styles.contextCard, compact && styles.contextCardCompact)}>
+    <div
+      key={record.recordId}
+      className={cn(
+        styles.contextCard,
+        styles[`tintBg_${sevTone}`],
+        compact && !expanded && styles.contextCardCompact,
+      )}
+    >
       <div className={styles.contextCardHeader}>
         <div className={styles.contextCardType}>{typeLabel}</div>
         <div className={styles.contextCardBadges}>
-          <span className={cn(styles.sevBadge, styles[`tone_${severityTone(record.severity)}`])}>
+          <span className={cn(styles.sevBadge, styles[`tone_${sevTone}`])}>
             {record.severity}
           </span>
           <span className={cn(styles.statusBadgeChip, styles[`stat_${statusTone(record.status)}`])}>
@@ -39,7 +52,7 @@ export function ContextCard({ record, view, compact }: ContextCardProps) {
 
       <div className={styles.contextCardTitle}>{record.title}</div>
 
-      {!compact && record.summary && (
+      {isExpanded && record.summary && (
         <div className={styles.contextCardSummary}>{record.summary}</div>
       )}
 
@@ -68,15 +81,37 @@ export function ContextCard({ record, view, compact }: ContextCardProps) {
         )}
       </div>
 
-      {!compact && record.highlights.length > 0 && (
+      {isExpanded && record.highlights.length > 0 && (
         <div className={styles.contextCardFacts}>
-          {record.highlights.slice(0, 3).map((h) => (
+          {record.highlights.slice(0, compact ? 3 : 5).map((h) => (
             <div key={h.label} className={styles.contextCardFact}>
               <span>{h.label}</span>
               <strong>{h.value}</strong>
             </div>
           ))}
         </div>
+      )}
+
+      {compact && (
+        <button
+          type="button"
+          className={styles.contextCardExpandBtn}
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+        >
+          {expanded ? 'Less detail' : 'More detail'}
+          <svg
+            className={cn(styles.contextCardExpandIcon, expanded && styles.contextCardExpandIconOpen)}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
       )}
     </div>
   );

@@ -75,7 +75,8 @@ export type XenaActionCategory =
 export type XenaActionVerb =
   | 'created' | 'updated' | 'deleted' | 'deployed' | 'invoked'
   | 'listed' | 'described' | 'configured' | 'scaled' | 'checked'
-  | 'started' | 'stopped' | 'modified' | 'published';
+  | 'started' | 'stopped' | 'modified' | 'published'
+  | 'queried' | 'completed' | 'fetched' | 'searched';
 
 export type XenaActionEvent = {
   type: 'action';
