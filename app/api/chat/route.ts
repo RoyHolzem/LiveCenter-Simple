@@ -215,9 +215,9 @@ export async function POST(request: Request) {
       }
 
       // Pipe through the xena_ui injector to emit OPEN_* actions from record IDs
+      // Also forward tool_calls and inject action events from content patterns
       const seen = new Set<string>();
       const reader = response.body!.getReader();
-      let firstChunk = true;
 
       const injectedStream = new ReadableStream({
         async pull(controller) {
@@ -229,12 +229,6 @@ export async function POST(request: Request) {
 
           const text = new TextDecoder().decode(value, { stream: true });
 
-          // Inject a test xena_ui on the very first chunk to verify frontend wiring
-          if (firstChunk) {
-            firstChunk = false;
-            // No-op: don't inject test event, only inject on real record IDs
-          }
-
           // Split on SSE event boundaries (\n\n)
           const events = text.split('\n\n');
           for (let i = 0; i < events.length; i++) {
@@ -242,15 +236,34 @@ export async function POST(request: Request) {
 
             if (!event.trim()) continue;
 
-            // Forward the event
+            // Forward the event as-is first
             controller.enqueue(new TextEncoder().encode(event + '\n\n'));
 
-            // Scan for record IDs in delta content
             const dataLine = event.split('\n').find((l) => l.startsWith('data: '));
             if (!dataLine || dataLine === 'data: [DONE]') continue;
 
             try {
               const json = JSON.parse(dataLine.slice(6));
+
+              // Forward tool_calls from OpenAI-format deltas as action events
+              const toolCalls = json?.choices?.[0]?.delta?.tool_calls;
+              if (Array.isArray(toolCalls)) {
+                for (const tc of toolCalls) {
+                  if (tc.function?.name) {
+                    const actionPayload = JSON.stringify({
+                      type: 'action',
+                      verb: 'invoked',
+                      category: 'general',
+                      label: tc.function.name,
+                      detail: tc.function.arguments?.substring(0, 200),
+                      timestamp: new Date().toISOString(),
+                    });
+                    controller.enqueue(new TextEncoder().encode(`data: ${actionPayload}\n\n`));
+                  }
+                }
+              }
+
+              // Scan for record IDs in delta content
               const content: string =
                 json?.choices?.[0]?.delta?.content ??
                 json?.choices?.[0]?.message?.content ??

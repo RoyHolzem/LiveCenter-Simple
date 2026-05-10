@@ -11,19 +11,29 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 're
 import type { AvatarState, ChatMessage, PresenceState, XenaActionEvent } from '@/lib/types';
 import type { XenaUiAction } from '@/lib/xena-ui-actions';
 import { makeId } from '../chat-utils';
-import { parseSseDataObject } from '../sse-parse';
+import { parseSseDataObject, type ToolCallInfo } from '../sse-parse';
 
 const nowIso = () => new Date().toISOString();
+
+export type ToolCallEvent = {
+  id: string;
+  name: string;
+  arguments: string;
+};
 
 export type UseChatOptions = {
   onXenaAction?: (event: XenaActionEvent) => void;
   onUiActions?: (actions: XenaUiAction[]) => void;
+  onToolCall?: (call: ToolCallEvent) => void;
+  onToolResult?: (result: { id: string; name: string; content: string }) => void;
   onResponseDone?: () => void;
 };
 
 export function useChat(selectedModel: string = 'inceptionlabs/mercury-2', options?: UseChatOptions) {
   const onXenaAction = options?.onXenaAction;
   const onUiActions = options?.onUiActions;
+  const onToolCall = options?.onToolCall;
+  const onToolResult = options?.onToolResult;
   const onResponseDone = options?.onResponseDone;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
@@ -212,6 +222,16 @@ export function useChat(selectedModel: string = 'inceptionlabs/mercury-2', optio
               onXenaAction?.(sseLine.event);
               continue;
             }
+            if (sseLine.kind === 'tool_call') {
+              for (const tc of sseLine.calls) {
+                onToolCall?.({ id: tc.id || `tc-${Date.now()}`, name: tc.name, arguments: tc.arguments || '' });
+              }
+              continue;
+            }
+            if (sseLine.kind === 'tool_result') {
+              onToolResult?.({ id: sseLine.id, name: sseLine.name, content: sseLine.content });
+              continue;
+            }
             if (sseLine.kind === 'delta') {
               setPresence('typing');
               assistantBufferRef.current += sseLine.text;
@@ -240,7 +260,7 @@ export function useChat(selectedModel: string = 'inceptionlabs/mercury-2', optio
         )
       );
     }
-  }, [draft, messages, presence, selectedModel, onXenaAction, onUiActions, onResponseDone]);
+  }, [draft, messages, presence, selectedModel, onXenaAction, onUiActions, onToolCall, onToolResult, onResponseDone]);
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {

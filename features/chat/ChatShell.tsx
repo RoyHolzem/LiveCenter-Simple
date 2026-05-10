@@ -13,7 +13,7 @@ import { useCockpitState } from './hooks/useCockpitState';
 import { useChatContext } from './hooks/useChatContext';
 import { useGitHub } from './hooks/useGitHub';
 import { useModels } from './hooks/useModels';
-import { useActionLog, useActionLogSync, toolEventToEntry, uiActionToEntry } from './hooks/useActionLog';
+import { useActionLog, useActionLogSync, toolEventToEntry, toolCallToEntry, toolResultToEntry, uiActionToEntry } from './hooks/useActionLog';
 import { TopNav, type AppMode } from './components/TopNav';
 import { ChatCenter } from './components/ChatCenter';
 import { AgentActionsPanel } from './components/AgentActionsPanel';
@@ -79,9 +79,27 @@ export function ChatShell() {
     [actionLog],
   );
 
+  // Log tool calls (when agent calls exec, web_fetch, read, etc.)
+  const onToolCall = useCallback(
+    (call: { id: string; name: string; arguments: string }) => {
+      actionLog.addEntry(toolCallToEntry(call.name, call.arguments));
+    },
+    [actionLog],
+  );
+
+  // Log tool results
+  const onToolResult = useCallback(
+    (result: { id: string; name: string; content: string }) => {
+      actionLog.addEntry(toolResultToEntry(result.name, result.content));
+    },
+    [actionLog],
+  );
+
   const chat = useChat(selectedModel, {
     onXenaAction,
     onUiActions,
+    onToolCall,
+    onToolResult,
     onResponseDone: useCallback(() => {
       void telecom.loadTelecomView(contextView, true);
     }, [contextView, telecom]),

@@ -183,6 +183,60 @@ export function toolEventToEntry(event: XenaActionEvent): Omit<ActionLogEntry, '
   };
 }
 
+/** Tool names to friendly labels + icons */
+const TOOL_DISPLAY: Record<string, { label: string; icon: string }> = {
+  exec: { label: 'Execute command', icon: '⚡' },
+  read: { label: 'Read file', icon: '📖' },
+  write: { label: 'Write file', icon: '✏️' },
+  edit: { label: 'Edit file', icon: '✏️' },
+  web_fetch: { label: 'Fetch URL', icon: '🌐' },
+  web_post: { label: 'POST request', icon: '📤' },
+  web_put: { label: 'PUT request', icon: '📤' },
+  web_search: { label: 'Web search', icon: '🔍' },
+  browser: { label: 'Browser action', icon: '🖥' },
+  process: { label: 'Manage process', icon: '⚙' },
+  message: { label: 'Send message', icon: '💬' },
+  tts: { label: 'Text to speech', icon: '🔊' },
+  canvas: { label: 'Canvas render', icon: '🎨' },
+  nodes: { label: 'Node control', icon: '📱' },
+  evolution_proposal: { label: 'Propose evolution', icon: '🧬' },
+};
+
+/** Create a log entry from a tool call */
+export function toolCallToEntry(name: string, args: string): Omit<ActionLogEntry, 'id' | 'timestamp'> {
+  const display = TOOL_DISPLAY[name] || { label: name, icon: '🔧' };
+  let detail: string | undefined;
+  try {
+    const parsed = JSON.parse(args);
+    // Extract the most useful detail field
+    detail = parsed.command || parsed.url || parsed.path || parsed.query || parsed.file_path
+      || (typeof parsed.body === 'string' ? parsed.body.substring(0, 80) : undefined)
+      || (name === 'exec' && parsed.command ? parsed.command : undefined);
+  } catch {
+    if (args && args.length > 0 && args.length < 100) detail = args;
+  }
+  return {
+    source: 'tool',
+    label: display.label,
+    detail,
+    status: 'running',
+    icon: display.icon,
+  };
+}
+
+/** Create a log entry from a tool result */
+export function toolResultToEntry(name: string, content: string): Omit<ActionLogEntry, 'id' | 'timestamp'> {
+  const display = TOOL_DISPLAY[name] || { label: name, icon: '🔧' };
+  const truncated = content.length > 120 ? content.substring(0, 120) + '...' : content;
+  return {
+    source: 'tool',
+    label: `${display.label} → done`,
+    detail: truncated,
+    status: 'done',
+    icon: '✓',
+  };
+}
+
 /** Create a log entry from a UI action */
 export function uiActionToEntry(action: XenaUiAction): Omit<ActionLogEntry, 'id' | 'timestamp'> {
   let label = action.type.replace(/_/g, ' ').toLowerCase();
