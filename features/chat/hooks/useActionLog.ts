@@ -167,11 +167,12 @@ export function useActionLogSync(
         });
       }
 
-      // Poll CloudWatch for real API Gateway logs
+      // Poll CloudWatch for real API Gateway logs (with delay — logs take time)
       const msgTime = new Date(msg.createdAt).getTime();
       const chatStartTime = msgTime - 5000;
 
-      (async () => {
+      // First poll after 10s, then retry at 25s if no results
+      const pollCloudWatch = async (attempt: number) => {
         try {
           const token = await getAuthToken();
           if (!token) return;
@@ -181,7 +182,12 @@ export function useActionLogSync(
             body: JSON.stringify({ afterTimestamp: chatStartTime }),
           });
           const data: { events?: Array<Record<string, string>> } = await res.json();
-          if (!data.events || data.events.length === 0) return;
+          if (!data.events || data.events.length === 0) {
+            if (attempt < 2) {
+              setTimeout(() => pollCloudWatch(attempt + 1), 15000);
+            }
+            return;
+          }
           for (const evt of data.events) {
             const method = evt.httpMethod || 'GET';
             const route = evt.routeKey || 'unknown';
@@ -201,7 +207,9 @@ export function useActionLogSync(
         } catch (err) {
           console.error('[action-log] CloudWatch poll failed:', err);
         }
-      })();
+      };
+
+      setTimeout(() => pollCloudWatch(0), 10000);
 
       break; // Only process the latest unprocessed assistant message
     }
