@@ -2,15 +2,17 @@
   --xena-red: #e30016;
   --xena-blue: #0799eb;
   --xena-ink: #0b1d31;
-  --xena-paper: #f6f9fc;
+  --xena-muted: #5d7084;
+  --xena-radius: 30px;
+  --xena-shadow: 0 30px 90px rgba(11, 29, 49, 0.16);
+  position: relative;
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow: hidden;
   color: var(--xena-ink);
   background:
-    radial-gradient(circle at 18% 18%, rgba(7, 153, 235, 0.18), transparent 28rem),
-    radial-gradient(circle at 82% 68%, rgba(227, 0, 22, 0.12), transparent 26rem),
-    linear-gradient(135deg, #fbfdff 0%, #edf4fb 48%, #ffffff 100%);
-  position: relative;
+    radial-gradient(circle at 12% 10%, rgba(7, 153, 235, 0.16), transparent 30%),
+    radial-gradient(circle at 90% 8%, rgba(227, 0, 22, 0.12), transparent 28%),
+    linear-gradient(180deg, #f8fbff 0%, #eef5fb 46%, #ffffff 100%);
 }
 
 .glitchLayer,
@@ -21,21 +23,21 @@
 }
 
 .glitchLayer {
-  opacity: 0.45;
+  opacity: 0.72;
   background-image:
-    linear-gradient(rgba(7, 153, 235, 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(227, 0, 22, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, transparent 0 46%, rgba(255, 255, 255, 0.5) 48% 52%, transparent 54% 100%);
-  background-size: 44px 44px, 44px 44px, 100% 7px;
+    linear-gradient(rgba(7, 153, 235, 0.065) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(227, 0, 22, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, transparent 0 44%, rgba(255, 255, 255, 0.6) 48% 52%, transparent 56% 100%);
+  background-size: 48px 48px, 48px 48px, 100% 8px;
   animation: glitchDrift 9s steps(2, end) infinite;
 }
 
 .beamLayer {
-  opacity: 0.7;
+  opacity: 0.76;
   background:
-    linear-gradient(115deg, transparent 0 38%, rgba(7, 153, 235, 0.13) 39%, transparent 41% 100%),
-    linear-gradient(62deg, transparent 0 60%, rgba(227, 0, 22, 0.1) 61%, transparent 63% 100%);
-  filter: blur(10px);
+    linear-gradient(115deg, transparent 0 35%, rgba(7, 153, 235, 0.13) 37%, transparent 40% 100%),
+    linear-gradient(62deg, transparent 0 60%, rgba(227, 0, 22, 0.11) 62%, transparent 65% 100%);
+  filter: blur(12px);
 }
 
 .nav {
@@ -43,14 +45,14 @@
   top: 18px;
   left: 50%;
   z-index: 20;
-  width: min(1120px, calc(100% - 32px));
+  width: min(1180px, calc(100% - 32px));
   transform: translateX(-50%);
   padding: 10px 14px;
-  border: 1px solid rgba(11, 29, 49, 0.08);
+  border: 1px solid rgba(11, 29, 49, 0.1);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.76);
   box-shadow: 0 18px 60px rgba(11, 29, 49, 0.12);
-  backdrop-filter: blur(18px);
+  backdrop-filter: blur(20px);
 }
 
 .brand {
@@ -65,47 +67,119 @@
   overflow: visible;
 }
 
-.heroLogo {
-  filter: drop-shadow(0 20px 34px rgba(11, 29, 49, 0.2));
-  animation: logoGlitch 6s steps(1, end) infinite;
+.navLink {
+  color: rgba(11, 29, 49, 0.7);
+  font-size: 0.92rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.navLink:hover,
+.navLink:focus-visible {
+  color: var(--xena-blue);
+}
+
+.navCta,
+.primaryCta {
+  border: 0;
+  background: linear-gradient(135deg, var(--xena-blue), #0b6bd7 52%, var(--xena-red));
+  box-shadow: 0 14px 32px rgba(7, 153, 235, 0.26);
 }
 
 .hero {
   position: relative;
   z-index: 1;
-  display: flex;
-  align-items: center;
-  min-height: 100vh;
-  padding-top: 112px;
-  padding-bottom: 56px;
+  padding-top: clamp(8rem, 12vw, 11rem);
+  padding-bottom: clamp(4rem, 8vw, 7rem);
+}
+
+.eyebrow,
+.cardEyebrow {
+  color: var(--xena-red);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  border: 1px solid rgba(227, 0, 22, 0.15);
+  background: rgba(255, 255, 255, 0.66);
+  box-shadow: 0 14px 34px rgba(11, 29, 49, 0.08);
+}
+
+.statusDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--xena-blue);
+  box-shadow: 0 0 0 6px rgba(7, 153, 235, 0.13), 0 0 18px rgba(7, 153, 235, 0.55);
+}
+
+.title {
+  max-width: 760px;
+  line-height: 0.93;
+  letter-spacing: -0.065em;
+}
+
+.subtitle {
+  max-width: 660px;
+  color: #496277;
+  line-height: 1.68;
+}
+
+.metricCard,
+.featureCard,
+.workflowStep {
+  border: 1px solid rgba(11, 29, 49, 0.08);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 18px 50px rgba(11, 29, 49, 0.08);
+  backdrop-filter: blur(16px);
+}
+
+.metricCard strong {
+  font-size: clamp(1.2rem, 2.4vw, 1.75rem);
+}
+
+.metricCard span {
+  color: var(--xena-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .logoStage {
   display: flex;
   justify-content: center;
-  margin-bottom: 28px;
+  margin-bottom: 20px;
+}
+
+.heroLogo {
+  filter: drop-shadow(0 20px 34px rgba(11, 29, 49, 0.2));
+  animation: logoGlitch 6s steps(1, end) infinite;
 }
 
 .showcase {
   overflow: hidden;
   border-radius: 34px;
-  background: rgba(255, 255, 255, 0.76);
-  box-shadow: 0 32px 100px rgba(11, 29, 49, 0.18);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: var(--xena-shadow);
   backdrop-filter: blur(26px);
 }
 
 .browserBar {
   min-height: 64px;
   border: 0;
-  background: linear-gradient(90deg, rgba(11, 29, 49, 0.96), rgba(11, 29, 49, 0.88));
+  background:
+    linear-gradient(90deg, rgba(11, 29, 49, 0.98), rgba(11, 29, 49, 0.9)),
+    linear-gradient(135deg, rgba(7, 153, 235, 0.22), rgba(227, 0, 22, 0.16));
 }
 
 .dotRed,
 .dotBlue,
 .dotInk {
+  display: inline-block;
   width: 12px;
   height: 12px;
-  display: inline-block;
   border-radius: 999px;
 }
 
@@ -116,13 +190,13 @@
 .urlPill,
 .livePill {
   border-radius: 999px;
-  font-size: 0.82rem;
-  font-weight: 800;
+  font-size: 0.8rem;
+  font-weight: 900;
   letter-spacing: 0.08em;
 }
 
 .urlPill {
-  padding: 0.5rem 1.15rem;
+  padding: 0.48rem 1rem;
   color: #eaf5ff;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -135,27 +209,54 @@
 }
 
 .cardBody {
-  padding: clamp(1.25rem, 3vw, 2.5rem);
+  padding: clamp(1.25rem, 3vw, 2.25rem);
+}
+
+.signalCard {
+  border: 1px solid rgba(11, 29, 49, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(245, 249, 253, 0.82));
+}
+
+.signalCard span {
+  display: block;
+  color: var(--xena-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.signalCard strong {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 1.65rem;
+  line-height: 1;
+}
+
+.signalHot {
+  color: white;
+  background: linear-gradient(135deg, var(--xena-ink), #173a5f 58%, var(--xena-red));
+}
+
+.signalHot span {
+  color: rgba(255, 255, 255, 0.78);
 }
 
 .chatWindow {
   display: grid;
   gap: 14px;
-  max-width: 880px;
-  margin: 0 auto;
 }
 
 .message {
-  width: min(680px, 100%);
-  padding: 16px 18px;
+  width: min(620px, 100%);
+  padding: 15px 17px;
   border: 1px solid rgba(11, 29, 49, 0.08);
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.82);
   box-shadow: 0 18px 40px rgba(11, 29, 49, 0.08);
   opacity: 0;
   transform: translateY(18px) scale(0.98);
   animation: messagePop 0.45s ease forwards;
-  animation-delay: calc(0.35s + (var(--line-index) * 1.65s));
+  animation-delay: calc(0.35s + (var(--line-index) * 1.55s));
 }
 
 .assistantMessage {
@@ -171,12 +272,12 @@
 
 .messageLabel {
   display: block;
-  margin-bottom: 8px;
-  font-size: 0.72rem;
+  margin-bottom: 7px;
+  color: var(--xena-blue);
+  font-size: 0.7rem;
   font-weight: 900;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--xena-blue);
 }
 
 .userMessage .messageLabel {
@@ -189,39 +290,87 @@
 }
 
 .accessCard {
-  margin: 26px auto 0;
-  max-width: 940px;
+  margin: 22px auto 0;
   color: var(--xena-ink);
-  border-radius: 28px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(244, 249, 253, 0.9));
-  box-shadow: 0 26px 70px rgba(11, 29, 49, 0.16);
+  border-radius: 26px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(244, 249, 253, 0.92));
+  box-shadow: 0 24px 65px rgba(11, 29, 49, 0.14);
   opacity: 0;
   transform: translateY(34px) scale(0.96);
-  animation: accessReveal 0.75s cubic-bezier(0.16, 1, 0.3, 1) 5.55s forwards;
+  animation: accessReveal 0.75s cubic-bezier(0.16, 1, 0.3, 1) 5.15s forwards;
 }
 
-.eyebrow {
+.cardEyebrow {
   margin-bottom: 0.65rem;
-  color: var(--xena-red);
+}
+
+.section {
+  position: relative;
+  z-index: 1;
+  padding-top: clamp(3.5rem, 7vw, 6rem);
+  padding-bottom: clamp(3.5rem, 7vw, 6rem);
+}
+
+.featureCard {
+  border-radius: var(--xena-radius);
+}
+
+.iconOrb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  color: white;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--xena-blue), var(--xena-red));
+  box-shadow: 0 18px 34px rgba(7, 153, 235, 0.24);
+  font-size: 1.35rem;
   font-weight: 900;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
 }
 
-.title {
+.trustPanel {
+  color: white;
+  background:
+    radial-gradient(circle at top right, rgba(7, 153, 235, 0.24), transparent 34%),
+    linear-gradient(135deg, #07172a, #0b1d31 58%, #102a45);
+  box-shadow: 0 34px 90px rgba(11, 29, 49, 0.24);
+}
+
+.trustPanel .cardEyebrow {
+  color: #8dd8ff;
+}
+
+.trustPanel p {
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.checkItem {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.checkItem span {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: white;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--xena-blue), var(--xena-red));
+}
+
+.finalSection h2 {
   max-width: 760px;
-  margin: 0;
-  font-size: clamp(2rem, 5vw, 4.7rem);
-  line-height: 0.95;
-  letter-spacing: -0.06em;
 }
 
-.subtitle {
-  max-width: 680px;
-  margin: 1rem 0 0;
-  color: #496277;
-  font-size: 1.05rem;
-  line-height: 1.65;
+.workflowStep span {
+  width: 42px;
+  height: 42px;
+  color: white;
+  background: var(--xena-ink);
 }
 
 .authOverlay {
@@ -282,11 +431,18 @@
   95% { transform: translateX(-2px); }
 }
 
+@media (max-width: 991.98px) {
+  .hero { padding-top: 7.25rem; }
+  .logoStage { justify-content: flex-start; }
+}
+
 @media (max-width: 720px) {
   .nav { top: 10px; width: calc(100% - 20px); }
-  .brandLogo { width: 132px; }
-  .heroLogo { width: min(82vw, 340px); height: auto; }
-  .urlPill { font-size: 0.72rem; padding-inline: 0.75rem; }
+  .brandLogo { width: 126px; height: auto; }
+  .heroLogo { width: min(78vw, 320px); height: auto; }
+  .title { letter-spacing: -0.045em; }
+  .urlPill { font-size: 0.7rem; padding-inline: 0.7rem; }
   .livePill { display: none; }
   .showcase { border-radius: 24px; }
+  .message { width: 100%; }
 }
