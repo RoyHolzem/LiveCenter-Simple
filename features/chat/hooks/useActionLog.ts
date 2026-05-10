@@ -167,33 +167,27 @@ export function useActionLogSync(
         });
       }
 
-      // Poll CloudWatch for real API Gateway logs (with delay — logs take time)
+      // Poll CloudWatch for real API Gateway logs
+      // Logs have 1-2 min ingestion delay, so we retry multiple times
       const msgTime = new Date(msg.createdAt).getTime();
-      const chatStartTime = msgTime - 5000;
+      const chatStartTime = msgTime - 10000; // 10s before message
 
-      // First poll after 10s, then retry at 25s if no results
       const pollCloudWatch = async (attempt: number) => {
         try {
           const token = await getAuthToken();
-          if (!token) {
-            console.warn('[action-log] No auth token');
-            return;
-          }
+          if (!token) return;
           const res = await fetch('/api/api-logs', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ afterTimestamp: chatStartTime }),
           });
           if (!res.ok) {
-            console.warn('[action-log] API returned', res.status, await res.text());
-            if (attempt < 3) setTimeout(() => pollCloudWatch(attempt + 1), 15000);
+            if (attempt < 5) setTimeout(() => pollCloudWatch(attempt + 1), 20000);
             return;
           }
           const data: { events?: Array<Record<string, string>> } = await res.json();
           if (!data.events || data.events.length === 0) {
-            if (attempt < 3) {
-              setTimeout(() => pollCloudWatch(attempt + 1), 15000);
-            }
+            if (attempt < 5) setTimeout(() => pollCloudWatch(attempt + 1), 20000);
             return;
           }
           for (const evt of data.events) {
@@ -217,7 +211,7 @@ export function useActionLogSync(
         }
       };
 
-      setTimeout(() => pollCloudWatch(0), 10000);
+      setTimeout(() => pollCloudWatch(0), 30000);
 
       break; // Only process the latest unprocessed assistant message
     }

@@ -26,7 +26,6 @@ export async function POST(request: Request) {
       new FilterLogEventsCommand({
         logGroupName: '/aws/apigateway/xena-ops-api',
         startTime,
-        filterPattern: '{ $.httpMethod = "*" }',
         limit: 50,
       }),
     );
