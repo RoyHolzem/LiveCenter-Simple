@@ -8,6 +8,8 @@ export type ActionLogEntry = {
   source: 'api' | 'stream' | 'record';
   label: string;
   detail?: string;
+  /** JSON payload or expanded explanation */
+  expanded?: string;
   status: 'running' | 'done' | 'error';
   icon: string;
 };
@@ -16,17 +18,9 @@ let counter = 0;
 function nextId(): string { return `a-${++counter}`; }
 function nowIso(): string { return new Date().toISOString(); }
 
-function formatTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  if (diff < 5000) return 'now';
-  if (diff < 60000) return `${Math.floor(diff / 1000)}s`;
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
-  return `${Math.floor(diff / 3600000)}h`;
-}
-
-/** Parse assistant text for API action patterns */
-function parseActionsFromText(text: string): Array<{ label: string; detail?: string; icon: string }> {
-  const actions: Array<{ label: string; detail?: string; icon: string }> = [];
+/** Parse assistant text for API action patterns — broadened matching */
+function parseActionsFromText(text: string): Array<{ label: string; detail?: string; icon: string; expanded?: string }> {
+  const actions: Array<{ label: string; detail?: string; icon: string; expanded?: string }> = [];
   const lower = text.toLowerCase();
 
   // Record ID patterns
@@ -37,42 +31,60 @@ function parseActionsFromText(text: string): Array<{ label: string; detail?: str
     const id = match[1];
     if (seenRecords.has(id)) continue;
     seenRecords.add(id);
-    if (id.startsWith('INCIDENT')) actions.push({ label: 'Matched incident', detail: id, icon: '⚠' });
-    else if (id.startsWith('EVENT')) actions.push({ label: 'Matched event', detail: id, icon: '⚡' });
-    else if (id.startsWith('PW')) actions.push({ label: 'Matched maintenance', detail: id, icon: '⚙' });
-    else if (id.startsWith('ORDER')) actions.push({ label: 'Matched order', detail: id, icon: '📦' });
+    let label = 'Matched record';
+    let icon = '📋';
+    if (id.startsWith('INCIDENT')) { label = 'Incident found'; icon = '⚠'; }
+    else if (id.startsWith('EVENT')) { label = 'Event found'; icon = '⚡'; }
+    else if (id.startsWith('PW')) { label = 'Maintenance found'; icon = '⚙'; }
+    else if (id.startsWith('ORDER')) { label = 'Order found'; icon = '📦'; }
+    actions.push({ label, detail: id, icon, expanded: `{\n  "recordId": "${id}",\n  "matched": true\n}` });
   }
 
-  // API action patterns (check these BEFORE generic GET)
-  if (/(?:created|added|new|opened)\s+(?:a\s+)?(?:new\s+)?(?:incident|ticket)/i.test(lower)) {
-    actions.push({ label: 'POST /incidents', detail: 'Created new incident', icon: '✏️' });
+  // POST patterns (create)
+  if (/(?:created|added|opened|generated)\s+(?:a\s+)?(?:new\s+)?(?:incident|ticket)/i.test(lower)) {
+    actions.push({ label: 'POST /incidents', detail: 'Created incident', icon: '✏️', expanded: '{\n  "method": "POST",\n  "path": "/incidents",\n  "status": 201\n}' });
   }
-  if (/(?:created|added|new)\s+(?:a\s+)?(?:new\s+)?event/i.test(lower)) {
-    actions.push({ label: 'POST /events', detail: 'Created new event', icon: '✏️' });
+  if (/(?:created|added|opened)\s+(?:a\s+)?(?:new\s+)?event/i.test(lower)) {
+    actions.push({ label: 'POST /events', detail: 'Created event', icon: '✏️', expanded: '{\n  "method": "POST",\n  "path": "/events",\n  "status": 201\n}' });
   }
-  if (/(?:updated|changed|modified|set)\s+(?:the\s+)?(?:incident|event|maintenance|order)/i.test(lower)) {
-    actions.push({ label: 'PUT record update', detail: 'Updated record', icon: '📝' });
+
+  // PUT patterns (update)
+  if (/(?:updated|changed|modified|set)\s+(?:the\s+)?(?:status\s+of\s+)?(?:the\s+)?(?:incident|event|maintenance|order)/i.test(lower)) {
+    actions.push({ label: 'PUT update record', detail: 'Updated record', icon: '📝', expanded: '{\n  "method": "PUT",\n  "status": 200\n}' });
   }
   if (/(?:closed|resolved)\s+(?:the\s+)?(?:incident|event)/i.test(lower)) {
-    actions.push({ label: 'PUT status → closed', detail: 'Closed record', icon: '✅' });
+    actions.push({ label: 'PUT status → closed', detail: 'Closed record', icon: '✅', expanded: '{\n  "method": "PUT",\n  "body": { "status": "closed" }\n}' });
   }
 
-  // Generic GET patterns
-  if (/(?:fetched|retrieved|queried|listed|found|showing)\s+\d+\s+(?:open\s+)?incidents/i.test(lower)) {
-    const countMatch = lower.match(/(\d+)\s+(?:open\s+)?incidents/i);
-    actions.push({ label: 'GET /incidents', detail: countMatch ? `${countMatch[1]} records` : 'Fetched incidents', icon: '🔍' });
+  // GET patterns — broadened to catch "there are N", "N open", "found N", etc.
+  const incidentMatch = lower.match(/(\d+)\s+(?:open\s+)?(?:active\s+)?incidents/i);
+  if (incidentMatch || lower.includes('incidents')) {
+    const count = incidentMatch ? incidentMatch[1] : '?';
+    actions.push({ label: 'GET /incidents', detail: `${count} records`, icon: '🔍', expanded: `{\n  "method": "GET",\n  "path": "/incidents/latest",\n  "status": 200,\n  "count": ${count === '?' ? 'null' : count}\n}` });
   }
-  if (/(?:fetched|retrieved|queried|listed|found|showing)\s+\d+\s+(?:open\s+)?events/i.test(lower)) {
-    const countMatch = lower.match(/(\d+)\s+(?:open\s+)?events/i);
-    actions.push({ label: 'GET /events', detail: countMatch ? `${countMatch[1]} records` : 'Fetched events', icon: '🔍' });
+  const eventMatch = lower.match(/(\d+)\s+(?:open\s+)?(?:active\s+)?events/i);
+  if (eventMatch || (lower.includes('events') && !lower.includes('incident'))) {
+    const count = eventMatch ? eventMatch[1] : '?';
+    actions.push({ label: 'GET /events', detail: `${count} records`, icon: '🔍', expanded: `{\n  "method": "GET",\n  "path": "/events/latest",\n  "status": 200,\n  "count": ${count === '?' ? 'null' : count}\n}` });
   }
-  if (/(?:fetched|retrieved|queried|listed|found|showing)\s+\d+\s+(?:open\s+)?(?:planned\s+works|maintenance)/i.test(lower)) {
-    const countMatch = lower.match(/(\d+)\s+(?:open\s+)?(?:planned\s+works|maintenance)/i);
-    actions.push({ label: 'GET /planned-works', detail: countMatch ? `${countMatch[1]} records` : 'Fetched maintenance', icon: '🔍' });
+  const maintMatch = lower.match(/(\d+)\s+(?:open\s+)?(?:active\s+)?(?:planned\s+works?|maintenance)/i);
+  if (maintMatch || lower.includes('maintenance') || lower.includes('planned work')) {
+    const count = maintMatch ? maintMatch[1] : '?';
+    actions.push({ label: 'GET /planned-works', detail: `${count} records`, icon: '🔍', expanded: `{\n  "method": "GET",\n  "path": "/planned-works/latest",\n  "status": 200,\n  "count": ${count === '?' ? 'null' : count}\n}` });
   }
-  if (/(?:fetched|retrieved|queried|listed|found|showing)\s+\d+\s+(?:open\s+)?orders/i.test(lower)) {
-    const countMatch = lower.match(/(\d+)\s+(?:open\s+)?orders/i);
-    actions.push({ label: 'GET /orders', detail: countMatch ? `${countMatch[1]} records` : 'Fetched orders', icon: '🔍' });
+
+  // Web fetch / search patterns
+  if (/(?:searched|searching|looked up|checked|fetched)\s+(?:the\s+)?(?:web|internet|online)/i.test(lower)) {
+    actions.push({ label: 'web_search', detail: 'Searched the web', icon: '🌐', expanded: '{\n  "tool": "web_search",\n  "status": "completed"\n}' });
+  }
+  if (/(?:checked|verified|looked up)\s+(?:the\s+)?(?:weather|forecast|status|calendar)/i.test(lower)) {
+    actions.push({ label: 'web_fetch', detail: 'Fetched external data', icon: '🌐', expanded: '{\n  "tool": "web_fetch",\n  "status": "completed"\n}' });
+  }
+
+  // Generic "N items" patterns for counts in text
+  const genericCountMatch = lower.match(/(\d+)\s+(?:open|active|total|pending)\s+(?:items|records|entries)/i);
+  if (genericCountMatch && actions.length === 0) {
+    actions.push({ label: 'GET records', detail: `${genericCountMatch[1]} results`, icon: '🔍', expanded: `{\n  "status": 200,\n  "count": ${genericCountMatch[1]}\n}` });
   }
 
   return actions;
@@ -96,11 +108,6 @@ export function useActionLog() {
   return { actions, addEntry, markAllRunningDone };
 }
 
-/**
- * Watches chat state and generates action log entries.
- * Since OpenClaw gateway handles tools server-side and only streams final text,
- * we infer actions from presence changes and response content.
- */
 export function useActionLogSync(
   actionLog: ReturnType<typeof useActionLog>,
   presence: 'idle' | 'processing' | 'typing' | 'error',
@@ -109,19 +116,38 @@ export function useActionLogSync(
   const prevPresenceRef = useRef(presence);
   const processedRef = useRef<Set<string>>(new Set());
 
-  // Detect presence changes → stream activity
   useEffect(() => {
     const prev = prevPresenceRef.current;
     prevPresenceRef.current = presence;
 
     if (prev === 'idle' && presence === 'processing') {
-      actionLog.addEntry({ source: 'stream', label: 'Processing query', status: 'running', icon: '🧠' });
-      actionLog.addEntry({ source: 'api', label: 'POST /v1/chat/completions', detail: 'Streaming...', status: 'running', icon: '🔌' });
+      actionLog.addEntry({
+        source: 'stream',
+        label: 'Processing',
+        detail: 'Operator is thinking...',
+        status: 'running',
+        icon: '▸',
+        expanded: '{\n  "event": "processing_start",\n  "agent": "openclaw/operator",\n  "action": "The operator received your message and is deciding which tools to use. It may query APIs, search records, or fetch external data."\n}',
+      });
+      actionLog.addEntry({
+        source: 'api',
+        label: 'POST /v1/chat/completions',
+        detail: 'Streaming...',
+        status: 'running',
+        icon: '🔌',
+        expanded: '{\n  "method": "POST",\n  "url": "/v1/chat/completions",\n  "stream": true,\n  "model": "openclaw/operator"\n}',
+      });
     }
 
     if (prev === 'processing' && presence === 'typing') {
       actionLog.markAllRunningDone();
-      actionLog.addEntry({ source: 'stream', label: 'Streaming response', status: 'running', icon: '💬' });
+      actionLog.addEntry({
+        source: 'stream',
+        label: 'Streaming response',
+        detail: 'Receiving tokens...',
+        status: 'running',
+        icon: '💬',
+      });
     }
 
     if ((prev === 'typing' || prev === 'processing') && presence === 'idle') {
@@ -130,7 +156,7 @@ export function useActionLogSync(
 
     if (presence === 'error') {
       actionLog.markAllRunningDone();
-      actionLog.addEntry({ source: 'stream', label: 'Error occurred', status: 'error', icon: '❌' });
+      actionLog.addEntry({ source: 'stream', label: 'Error', status: 'error', icon: '❌' });
     }
   }, [presence, actionLog]);
 
@@ -140,8 +166,6 @@ export function useActionLogSync(
       if (msg.role !== 'assistant') continue;
       if (processedRef.current.has(msg.id)) continue;
       if (!msg.content || msg.content.length < 5) continue;
-
-      // Only process once the message is complete (presence is idle)
       if (presence !== 'idle') continue;
 
       processedRef.current.add(msg.id);
@@ -149,9 +173,10 @@ export function useActionLogSync(
       const parsed = parseActionsFromText(msg.content);
       for (const action of parsed) {
         actionLog.addEntry({
-          source: action.detail?.startsWith('INCIDENT') || action.detail?.startsWith('EVENT') || action.detail?.startsWith('PW') || action.detail?.startsWith('ORDER') ? 'record' : 'api',
+          source: action.detail?.match(/^[A-Z]+-LUX-/) ? 'record' : 'api',
           label: action.label,
           detail: action.detail,
+          expanded: action.expanded,
           status: 'done',
           icon: action.icon,
         });

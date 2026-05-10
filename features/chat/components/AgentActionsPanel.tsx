@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import type { ActionLogEntry } from '../hooks/useActionLog';
 import { cn } from '../chat-utils';
 import styles from '../chat-shell.module.css';
@@ -14,6 +15,57 @@ function formatTime(iso: string): string {
   if (diff < 60000) return `${Math.floor(diff / 1000)}s`;
   if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
   return `${Math.floor(diff / 3600000)}h`;
+}
+
+function ActionEntry({ entry }: { entry: ActionLogEntry }) {
+  const [expanded, setExpanded] = useState(false);
+  const isClickable = !!entry.expanded;
+
+  return (
+    <div>
+      <div
+        className={cn(
+          styles.agentActionEntry,
+          entry.status === 'running' && styles.agentAction_running,
+          entry.status === 'done' && styles.agentAction_done,
+          entry.status === 'error' && styles.agentAction_error,
+          isClickable && styles.agentActionClickable,
+        )}
+        onClick={isClickable ? () => setExpanded(!expanded) : undefined}
+        role={isClickable ? 'button' : undefined}
+        tabIndex={isClickable ? 0 : undefined}
+      >
+        <div className={styles.agentActionIcon}>
+          {entry.status === 'running' ? (
+            <span className={styles.agentActionSpinner}>◌</span>
+          ) : (
+            entry.icon
+          )}
+        </div>
+        <div className={styles.agentActionContent}>
+          <div className={styles.agentActionLabel}>{entry.label}</div>
+          {entry.detail && (
+            <div className={styles.agentActionDetail}>{entry.detail}</div>
+          )}
+        </div>
+        <div className={styles.agentActionMeta}>
+          {isClickable && (
+            <span className={styles.agentActionChevron}>
+              {expanded ? '▴' : '▾'}
+            </span>
+          )}
+          <span className={styles.agentActionTime}>
+            {formatTime(entry.timestamp)}
+          </span>
+        </div>
+      </div>
+      {expanded && entry.expanded && (
+        <div className={styles.agentActionExpanded}>
+          <pre className={styles.agentActionJson}>{entry.expanded}</pre>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function AgentActionsPanel({ actions }: AgentActionsPanelProps) {
@@ -34,32 +86,7 @@ export function AgentActionsPanel({ actions }: AgentActionsPanelProps) {
           </div>
         ) : (
           actions.map((entry) => (
-            <div
-              key={entry.id}
-              className={cn(
-                styles.agentActionEntry,
-                entry.status === 'running' && styles.agentAction_running,
-                entry.status === 'done' && styles.agentAction_done,
-                entry.status === 'error' && styles.agentAction_error,
-              )}
-            >
-              <div className={styles.agentActionIcon}>
-                {entry.status === 'running' ? (
-                  <span className={styles.agentActionSpinner}>◌</span>
-                ) : (
-                  entry.icon
-                )}
-              </div>
-              <div className={styles.agentActionContent}>
-                <div className={styles.agentActionLabel}>{entry.label}</div>
-                {entry.detail && (
-                  <div className={styles.agentActionDetail}>{entry.detail}</div>
-                )}
-              </div>
-              <div className={styles.agentActionTime}>
-                {formatTime(entry.timestamp)}
-              </div>
-            </div>
+            <ActionEntry key={entry.id} entry={entry} />
           ))
         )}
       </div>

@@ -250,11 +250,20 @@
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--bg-elevated);
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, background 0.15s;
   animation: slideUp 0.2s ease both;
 }
 .agentActionEntry:hover {
   border-color: var(--border-focus);
+}
+.agentActionClickable {
+  cursor: pointer;
+}
+.agentActionClickable:hover {
+  background: var(--tint-hover);
+}
+.agentActionClickable:active {
+  transform: scale(0.99);
 }
 .agentAction_running {
   border-left: 3px solid var(--accent);
@@ -313,7 +322,37 @@
   color: var(--text-tertiary);
   white-space: nowrap;
   flex-shrink: 0;
+}
+.agentActionMeta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
   padding-top: 2px;
+}
+.agentActionChevron {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  opacity: 0.6;
+}
+.agentActionExpanded {
+  margin: -2px 8px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  border-top: none;
+  background: var(--bg-surface);
+  overflow: hidden;
+}
+.agentActionJson {
+  padding: 10px 12px;
+  margin: 0;
+  font-family: 'SF Mono', ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
 }
 
 /* ─── Side Panels ─── */
