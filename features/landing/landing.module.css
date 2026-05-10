@@ -417,6 +417,87 @@
   animation: blink 2s ease-in-out infinite;
 }
 
+/* ─── Hero wordmark — large, luminous brand lockup ─── */
+.heroLogoWrap {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 8px auto 36px;
+  max-width: min(680px, 92vw);
+  animation: heroSlideUp 0.85s var(--ease-emphasis) 0.05s both;
+}
+
+.heroLogoWrap::before {
+  content: '';
+  position: absolute;
+  width: min(120%, 720px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse 52% 48% at 50% 50%,
+      rgba(91, 127, 252, 0.55) 0%,
+      rgba(167, 139, 250, 0.22) 38%,
+      transparent 72%);
+  filter: blur(48px);
+  opacity: 0.85;
+  z-index: 0;
+  pointer-events: none;
+  animation: heroLogoGlowPulse 5.5s ease-in-out infinite;
+}
+
+.heroLogoWrap::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: var(--radius-xl);
+  padding: 2px;
+  background: linear-gradient(
+    135deg,
+    rgba(16, 243, 160, 0.45),
+    rgba(34, 211, 238, 0.35),
+    rgba(91, 127, 252, 0.5),
+    rgba(167, 139, 250, 0.45)
+  );
+  background-size: 220% 220%;
+  animation: auroraShimmer 10s linear infinite;
+  opacity: 0.35;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  z-index: 1;
+  pointer-events: none;
+}
+
+@keyframes heroLogoGlowPulse {
+  0%, 100% { transform: scale(0.94); opacity: 0.72; }
+  50% { transform: scale(1.06); opacity: 0.95; }
+}
+
+.heroLogo {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: auto;
+  max-width: min(620px, 88vw);
+  display: block;
+  filter:
+    drop-shadow(0 0 28px rgba(91, 127, 252, 0.45))
+    drop-shadow(0 0 64px rgba(167, 139, 250, 0.28))
+    drop-shadow(0 18px 40px rgba(0, 0, 0, 0.45));
+  transform: translateZ(0);
+  transition: transform var(--duration) var(--ease-emphasis),
+    filter var(--duration) var(--ease-emphasis);
+}
+
+.heroLogoWrap:hover .heroLogo {
+  transform: scale(1.02);
+  filter:
+    drop-shadow(0 0 36px rgba(91, 127, 252, 0.55))
+    drop-shadow(0 0 80px rgba(167, 139, 250, 0.38))
+    drop-shadow(0 22px 48px rgba(0, 0, 0, 0.5));
+}
+
 .heroTitle {
   font-size: clamp(44px, 7.5vw, 84px);
   font-weight: 800;
@@ -1311,6 +1392,12 @@
   .navLinks { display: none; }
   .heroStats { gap: 28px; }
   .hero { padding: 110px 20px 70px; }
+  .heroLogoWrap {
+    margin-bottom: 28px;
+  }
+  .heroLogoWrap::after {
+    border-radius: var(--radius-lg);
+  }
   .section, .sectionAlt { padding: 80px 20px; }
   .footerInner { flex-direction: column; text-align: center; }
   .archFlow { grid-template-columns: 36px 1fr 1fr; grid-template-rows: repeat(5, 76px); }

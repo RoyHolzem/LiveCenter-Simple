@@ -91,20 +91,40 @@ export function LandingPage({ onAuthenticated }: { onAuthenticated: () => void }
           <div className={styles.heroGlow1} />
           <div className={styles.heroGlow2} />
           <div className={styles.heroParticles}>
-            {Array.from({ length: 20 }).map((_, i) => (
-              <div key={i} className={styles.particle} style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 8}s`,
-                animationDuration: `${6 + Math.random() * 8}s`,
-              }} />
-            ))}
+            {Array.from({ length: 20 }, (_, i) => {
+              // Deterministic layout (SSR-safe — avoid Math.random in render)
+              const left = ((i * 47 + 13) % 100);
+              const top = ((i * 71 + 7) % 100);
+              const delay = (i * 0.41) % 8;
+              const duration = 6 + ((i * 37) % 8);
+              return (
+                <div
+                  key={i}
+                  className={styles.particle}
+                  style={{
+                    left: `${left}%`,
+                    top: `${top}%`,
+                    animationDelay: `${delay}s`,
+                    animationDuration: `${duration}s`,
+                  }}
+                />
+              );
+            })}
           </div>
         </div>
         <div className={styles.heroContent}>
           <div className={styles.heroBadge}>
             <span className={styles.heroBadgeDot} />
             Agentic Operations Platform
+          </div>
+          <div className={styles.heroLogoWrap}>
+            <Image
+              src={logo}
+              alt="Xena"
+              className={styles.heroLogo}
+              sizes="(max-width: 480px) 88vw, (max-width: 900px) 70vw, min(620px, 52vw)"
+              priority
+            />
           </div>
           <h1 className={styles.heroTitle}>
             Your Network&apos;s<br />
