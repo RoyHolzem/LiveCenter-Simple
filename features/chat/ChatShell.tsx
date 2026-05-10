@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import type { XenaUiAction } from '@/lib/xena-ui-actions';
+import type { XenaActionEvent } from '@/lib/types';
 import { publicConfig } from './chat-config';
 import { useAuthToken } from '../auth/AuthWrapper';
 import { useChat } from './hooks/useChat';
@@ -12,9 +13,10 @@ import { useCockpitState } from './hooks/useCockpitState';
 import { useChatContext } from './hooks/useChatContext';
 import { useGitHub } from './hooks/useGitHub';
 import { useModels } from './hooks/useModels';
+import { useActionLog, useActionLogSync, actionEventToEntry } from './hooks/useActionLog';
 import { TopNav, type AppMode } from './components/TopNav';
 import { ChatCenter } from './components/ChatCenter';
-import { LeftPanel } from './components/LeftPanel';
+import { AgentActionsPanel } from './components/AgentActionsPanel';
 import { RightPanel } from './components/RightPanel';
 import { ModuleDashboard } from './components/ModuleDashboard';
 import { BootScreen } from './components/BootScreen';
@@ -34,9 +36,20 @@ export function ChatShell() {
   const [contextView, setContextView] = useState<TelecomView>('incidents');
   const [search] = useState('');
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+  const actionLog = useActionLog();
 
   const { ghStatus, ghCommit } = useGitHub();
   const { models } = useModels();
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      return next;
+    });
+  }, []);
 
   const telecom = useTelecom(contextView, getAuthToken, search, {
     onContextViewChange: setContextView,
@@ -53,10 +66,18 @@ export function ChatShell() {
     [cockpit],
   );
 
+  // Log action events from the server (GET /incidents, web_fetch, etc.)
+  const onXenaAction = useCallback(
+    (event: XenaActionEvent) => {
+      actionLog.addEntry(actionEventToEntry(event));
+    },
+    [actionLog],
+  );
+
   const chat = useChat(selectedModel, {
+    onXenaAction,
     onUiActions,
     onResponseDone: useCallback(() => {
-      // Reload current telecom view to reflect any changes made by the operator
       void telecom.loadTelecomView(contextView, true);
     }, [contextView, telecom]),
   });
@@ -65,45 +86,37 @@ export function ChatShell() {
     onUserTranscript: useCallback((text: string) => {
       chat.addVoiceUserMessage(text);
     }, [chat]),
-
     onResponseStart: useCallback(() => {
       chat.resetVoiceAssistant();
     }, [chat]),
-
     onAssistantDelta: useCallback((delta: string) => {
       chat.appendVoiceAssistantDelta(delta);
     }, [chat]),
-
-    onResponseDone: useCallback(() => {
-      // no-op
-    }, []),
-
+    onResponseDone: useCallback(() => {}, []),
     onError: useCallback((err: string) => {
       console.error('[voice]', err);
     }, []),
-
     onUiActions,
   });
 
   const boot = useBootSequence();
 
-  // Preload all telecom views on mount so the chat context matcher has data
+  // Sync action log with chat state
+  useActionLogSync(actionLog, chat.presence, chat.messages, getAuthToken);
+
   useEffect(() => {
     const views: TelecomView[] = ['incidents', 'events', 'planned-works'];
     for (const view of views) {
       void telecom.loadTelecomView(view, true);
     }
-    // Only run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Chat-driven context: match conversation to telecom records (sticky by design)
   const { matchedRecord, matchedView } = useChatContext(
     chat.messages,
     telecom.recordsByView,
   );
 
-  // When a record is matched via chat context, override the active view + selection
   useEffect(() => {
     if (matchedRecord && matchedView) {
       if (matchedView !== contextView) {
@@ -114,7 +127,6 @@ export function ChatShell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchedRecord, matchedView]);
 
-  // The record to show in the right panel: chat context match takes priority
   const displayRecord = matchedRecord || telecom.selectedRecord;
 
   const isXenaMode = mode === 'xena';
@@ -146,26 +158,14 @@ export function ChatShell() {
         selectedModel={selectedModel}
         setSelectedModel={setSelectedModel}
         modelFallback={chat.modelFallback}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       <div className={styles.body}>
         {isXenaMode ? (
           <>
-            <LeftPanel
-              visible
-              contextView={contextView}
-              onContextViewChange={setContextView}
-              searchResults={cockpit.searchResults}
-              selectedRecordId={displayRecord?.recordId ?? telecom.selectedRecord?.recordId ?? null}
-              onPickSearchResult={(view, recordId) => {
-                cockpit.setSearchResults(null);
-                void telecom.focusRecord(view, recordId);
-              }}
-              records={telecom.filteredRecords}
-              onPickRecord={(view, recordId) => {
-                void telecom.focusRecord(view, recordId);
-              }}
-            />
+            <AgentActionsPanel actions={actionLog.actions} />
 
             <div className={styles.chatColumn}>
               <AgentActivityBar activity={cockpit.agentActivity} />
