@@ -1,5 +1,5 @@
-/* ─── Tokens (from ui-design-system.md) ─── */
-:root {
+/* ─── Page ─── */
+.page {
   --x-navy: #0E2347;
   --x-navy-light: #1a3562;
   --x-red: #E1182C;
@@ -14,10 +14,6 @@
   --x-purple: #7C3AED;
   --x-amber: #F59E0B;
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-}
-
-/* ─── Page ─── */
-.page {
   font-family: var(--font);
   color: var(--x-ink);
   background: var(--x-bg-white);
