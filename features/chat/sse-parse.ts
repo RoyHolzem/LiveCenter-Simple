@@ -36,7 +36,6 @@ export function parseSseDataObject(parsed: unknown): ParsedSseLine {
   if (o.type === 'xena_ui' && Array.isArray(o.uiActions)) {
     const actions = normalizeUiActions(o.uiActions);
     if (actions.length === 0) return { kind: 'skip' };
-    console.log('[sse-parse] xena_ui actions:', JSON.stringify(actions));
     return { kind: 'xena_ui', actions };
   }
 
@@ -57,11 +56,12 @@ export function parseSseDataObject(parsed: unknown): ParsedSseLine {
   }
 
   // OpenAI-format streaming — check for tool_calls first
-  const choice = (parsed as { choices?: Array<{ delta?: { content?: string; tool_calls?: unknown[] }; message?: { content?: string } }> }).choices?.[0];
+  const choice = (parsed as { choices?: Array<{ delta?: { content?: string; tool_calls?: unknown[]; role?: string }; message?: { content?: string } }> }).choices?.[0];
   if (choice) {
     // Tool call deltas
     const toolCalls = choice.delta?.tool_calls;
     if (Array.isArray(toolCalls) && toolCalls.length > 0) {
+      console.log('[sse] tool_calls:', JSON.stringify(toolCalls));
       const calls: ToolCallInfo[] = toolCalls.map((tc: any) => ({
         index: tc.index ?? 0,
         id: tc.id,
@@ -76,6 +76,11 @@ export function parseSseDataObject(parsed: unknown): ParsedSseLine {
     if (typeof content === 'string' && content.length > 0) {
       return { kind: 'delta', text: content };
     }
+  }
+
+  // Log any unrecognized types that might be tool-related
+  if (typeof o.type === 'string' && o.type !== 'xena_ui' && o.type !== 'telecom_focus') {
+    console.log('[sse] unknown type:', o.type, '| keys:', Object.keys(o).join(','));
   }
 
   return { kind: 'skip' };

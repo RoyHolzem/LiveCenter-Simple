@@ -215,20 +215,24 @@ export function useChat(selectedModel: string = 'inceptionlabs/mercury-2', optio
             const parsed = JSON.parse(raw);
             const sseLine = parseSseDataObject(parsed);
             if (sseLine.kind === 'xena_ui') {
+              console.log('[chat] xena_ui:', sseLine.actions);
               onUiActions?.(sseLine.actions);
               continue;
             }
             if (sseLine.kind === 'action') {
+              console.log('[chat] action:', sseLine.event.verb, sseLine.event.label);
               onXenaAction?.(sseLine.event);
               continue;
             }
             if (sseLine.kind === 'tool_call') {
+              console.log('[chat] tool_call:', sseLine.calls.map(c => c.name));
               for (const tc of sseLine.calls) {
                 onToolCall?.({ id: tc.id || `tc-${Date.now()}`, name: tc.name, arguments: tc.arguments || '' });
               }
               continue;
             }
             if (sseLine.kind === 'tool_result') {
+              console.log('[chat] tool_result:', sseLine.name);
               onToolResult?.({ id: sseLine.id, name: sseLine.name, content: sseLine.content });
               continue;
             }
