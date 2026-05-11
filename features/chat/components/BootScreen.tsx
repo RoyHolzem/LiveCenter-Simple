@@ -3,7 +3,7 @@
 import type { BootStep, BootState } from '../hooks/useBootSequence';
 import { XenaLogo } from '@/features/landing/XenaLogo';
 import { cn } from '../chat-utils';
-import styles from '../chat-shell.module.css';
+import styles from '../styles/boot-screen.module.css';
 
 interface BootScreenProps {
   bootState: BootState;

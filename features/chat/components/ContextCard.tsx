@@ -8,7 +8,7 @@ import {
   severityTone,
   statusTone,
 } from '@/features/operations/ops-helpers';
-import styles from '../chat-shell.module.css';
+import styles from '../styles/context-card.module.css';
 
 interface ContextCardProps {
   record: TelecomRecord;
