@@ -5,7 +5,7 @@ import { fetchAuthSession } from 'aws-amplify/auth';
 import '@/features/auth/AuthWrapper'; // ensures Amplify.configure runs
 import { ChatShell } from '@/features/chat/ChatShell';
 import { LandingPage } from '@/features/landing/LandingPage';
-import styles from '@/features/chat/chat-shell.module.css';
+import styles from '@/features/chat/styles/bootscreen.module.css';
 
 export default function HomePage() {
   const [authState, setAuthState] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
