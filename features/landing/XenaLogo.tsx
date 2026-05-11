@@ -12,7 +12,7 @@ export function XenaLogo({ size = 44, withWordmark = true, className, style }: X
     <img
       className={className}
       style={{ width: size, height: size, ...style }}
-      src="/favicon.png"
+      src="/logo.png"
       alt="Xena"
       width={size}
       height={size}
