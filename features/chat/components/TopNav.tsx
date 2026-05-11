@@ -5,7 +5,7 @@ import type { TelecomView } from '@/lib/types';
 import type { ModelInfo } from '../hooks/useModels';
 import { XenaLogo } from '@/features/landing/XenaLogo';
 import { cn } from '../chat-utils';
-import styles from '../styles/topnav.module.css';
+import styles from '../chat-shell.module.css';
 
 export type AppMode = 'xena' | TelecomView;
 

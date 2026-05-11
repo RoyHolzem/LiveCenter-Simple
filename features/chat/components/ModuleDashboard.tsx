@@ -14,7 +14,7 @@ import {
   summaryValue,
 } from '@/features/operations/ops-helpers';
 import { VIEW_META } from '@/features/operations/view-meta';
-import styles from '../styles/moduledashboard.module.css';
+import styles from '../chat-shell.module.css';
 
 interface ModuleDashboardProps {
   view: TelecomView;
