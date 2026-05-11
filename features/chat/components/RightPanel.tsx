@@ -8,7 +8,7 @@ import {
   severityTone,
   statusTone,
 } from '@/features/operations/ops-helpers';
-import styles from '../chat-shell.module.css';
+import styles from '../styles/rightpanel.module.css';
 
 interface RightPanelProps {
   visible: boolean;

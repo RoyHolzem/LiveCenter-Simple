@@ -5,7 +5,7 @@ import type { VoiceState } from '../hooks/useVoice';
 import { cn } from '../chat-utils';
 import { XenaLogo } from '@/features/landing/XenaLogo';
 import { ContextCard } from './ContextCard';
-import styles from '../chat-shell.module.css';
+import styles from '../styles/chatcenter.module.css';
 
 interface ChatCenterProps {
   assistantName: string;

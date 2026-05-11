@@ -1,0 +1,688 @@
+/* Auto-split from chat-shell.module.css */
+
+.sidePanel {
+  width: 0;
+  opacity: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, rgba(10, 16, 28, 0.88) 0%, rgba(6, 10, 18, 0.92) 100%);
+  backdrop-filter: blur(20px) saturate(1.15);
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: width var(--duration-slow) var(--ease-out),
+              opacity var(--duration) var(--ease-out);
+  flex-shrink: 0;
+}
+
+.panelVisible {
+  width: var(--panel-width);
+  opacity: 1;
+}
+
+.rightPanel {
+  border-left: 1px solid var(--border);
+  border-right: none;
+}
+
+.panelSection {
+  padding: 18px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.panelSectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+  margin-bottom: 14px;
+}
+
+.panelEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.panelEmptyIcon {
+  font-size: 24px;
+  color: var(--accent);
+  opacity: 0.5;
+}
+
+.detailHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.detailTitle {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.32;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.detailBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sevBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.tone_critical { background: var(--red-muted); color: var(--red); }
+
+.tone_high { background: var(--amber-muted); color: var(--amber); }
+
+.tone_medium { background: var(--cyan-muted); color: var(--cyan); }
+
+.tone_low { background: var(--green-muted); color: var(--green); }
+
+.statusBadgeChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.stat_ok { background: var(--green-muted); color: var(--green); }
+
+.stat_warn { background: var(--amber-muted); color: var(--amber); }
+
+.stat_muted { background: rgba(163, 163, 163, 0.12); color: #a3a3a3; }
+
+.stat_neutral { background: var(--cyan-muted); color: var(--cyan); }
+
+.detailSummary {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.detailTimes {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.detailTimeRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.detailTimeRow strong {
+  color: var(--text-secondary);
+}
+
+.factGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.factTile {
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+}
+
+.factTileLabel {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
+}
+
+.factTileValue {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.detailFactList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detailFactRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.detailFactRow:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.detailFactRow span {
+  color: var(--text-tertiary);
+}
+
+.detailFactRow strong {
+  color: var(--text);
+  text-align: right;
+  max-width: 58%;
+}
+
+.noticeText {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.sevBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.statusBadgeChip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.tone_critical { background: rgba(255,64,87,0.12); color: #ff4057; }
+
+.tone_major    { background: rgba(255,176,32,0.12); color: #ffb020; }
+
+.tone_info     { background: rgba(0,212,255,0.12); color: #00d4ff; }
+
+.stat_OPEN          { background: rgba(255,64,87,0.1); color: #ff4057; }
+
+.stat_ACKNOWLEDGED  { background: rgba(255,176,32,0.1); color: #ffb020; }
+
+.stat_IN_PROGRESS   { background: rgba(56,97,251,0.1); color: #5b7ffc; }
+
+.stat_RESOLVED      { background: rgba(0,230,138,0.1); color: #00e68a; }
+
+.stat_CLOSED        { background: rgba(92,107,138,0.1); color: #5c6b8a; }
+
+.sidePanel {
+  position: relative;
+  width: var(--panel-width);
+  flex-shrink: 0;
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideLeft 0.3s var(--ease-out) both;
+}
+
+.sidePanelVisible {
+  display: flex;
+}
+
+.recordOverlay {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.recordOverlayCard {
+  padding: 20px 16px;
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  margin: 12px;
+  animation: cardSlideIn 0.3s var(--ease-out) both;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.recordOverlayHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.recordOverlayClose {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  transition: all 0.15s;
+}
+
+.recordOverlayClose:hover {
+  background: var(--tint-hover-strong);
+  color: var(--text);
+}
+
+.recordOverlayTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.35;
+  padding-right: 36px;
+}
+
+.recordOverlayType {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent-bright);
+  margin-bottom: 4px;
+}
+
+.recordOverlayBadges {
+  display: flex;
+  gap: 5px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.recordOverlayBody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.recordOverlayRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+
+.recordOverlayRow:last-child {
+  border-bottom: none;
+}
+
+.recordOverlayLabel {
+  color: var(--text-tertiary);
+}
+
+.recordOverlayValue {
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-align: right;
+  max-width: 60%;
+}
+
+.recordOverlayNotice {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(255,176,32,0.06);
+  border: 1px solid rgba(255,176,32,0.1);
+}
+
+.recordOverlayNoticeLabel {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
+}
+
+.recordOverlayNotice p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.rightPanel {
+  width: min(320px, 24vw);
+  overflow: hidden;
+}
+
+
+/* ─── Xena 2026 Bootstrap-first visual refresh ───
+   This is the canonical visual override layer. Keep it last unless
+   these declarations are fully merged into the base selectors above. */
+.loadingScreen,
+.bootScreen {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(7, 153, 235, 0.16), transparent 26rem),
+    radial-gradient(circle at 78% 70%, rgba(227, 0, 22, 0.12), transparent 26rem),
+    linear-gradient(135deg, var(--bg-root), var(--bg-surface));
+}
+
+.loadingScreen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+}
+
+.loadingCircle,
+.bootOnlySpinner {
+  width: 58px;
+  height: 58px;
+  border-radius: 999px;
+  border: 4px solid rgba(7, 153, 235, 0.18);
+  border-top-color: var(--xena-blue, #0799eb);
+  border-right-color: var(--xena-red, #e30016);
+  box-shadow: 0 0 34px rgba(7, 153, 235, 0.24), 0 0 50px rgba(227, 0, 22, 0.12);
+  animation: spin 0.82s linear infinite;
+}
+
+.bootOnlySpinner {
+  width: 72px;
+  height: 72px;
+}
+
+.shell {
+  color: var(--text);
+  background:
+    linear-gradient(rgba(7, 153, 235, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(227, 0, 22, 0.028) 1px, transparent 1px),
+    radial-gradient(circle at 15% 10%, rgba(7, 153, 235, 0.15), transparent 28rem),
+    radial-gradient(circle at 84% 18%, rgba(227, 0, 22, 0.12), transparent 28rem),
+    var(--bg-root);
+  background-size: 42px 42px, 42px 42px, auto, auto, auto;
+}
+
+.shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.28;
+  background: repeating-linear-gradient(0deg, transparent 0 7px, rgba(255, 255, 255, 0.04) 8px);
+  animation: xenaScan 10s steps(2, end) infinite;
+}
+
+.topNav {
+  height: 72px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-glass) 88%, transparent);
+  backdrop-filter: blur(22px);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.16);
+}
+
+.topNavBrand,
+.topNavTabs,
+.topNavRight,
+.modelSelectorButton,
+.topNavLink,
+.topNavLinkMono,
+.themeToggle {
+  border-radius: 999px;
+}
+
+.topNavBrand {
+  padding: 7px 12px 7px 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+}
+
+.topNavLogoMark,
+.chatAvatarLogo,
+.chatMsgLogo,
+.bootLogoMark {
+  overflow: visible;
+  filter: drop-shadow(0 8px 18px rgba(7, 153, 235, 0.18));
+}
+
+.topNavAppName {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.topNavTab {
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.topNavTabActive {
+  color: #fff;
+  background: linear-gradient(135deg, var(--xena-blue, #0799eb), var(--xena-ink, #0b1d31));
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 30px rgba(7, 153, 235, 0.22);
+}
+
+.body {
+  height: calc(100vh - 72px);
+  padding: 18px;
+  gap: 18px;
+}
+
+.agentActionsPanel,
+.rightPanel,
+.chatCenter,
+.moduleDashboard,
+.moduleList,
+.moduleDetail,
+.moduleSummaryCard,
+.bootContainer {
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  background: color-mix(in srgb, var(--bg-card) 92%, transparent);
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(20px);
+}
+
+.agentActionsPanel,
+.rightPanel {
+  width: min(320px, 24vw);
+  overflow: hidden;
+}
+
+.chatColumn {
+  gap: 12px;
+}
+
+.chatCenter {
+  overflow: hidden;
+}
+
+.chatAvatarBar {
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(90deg, rgba(7, 153, 235, 0.08), rgba(227, 0, 22, 0.045));
+}
+
+.chatAvatarCircle {
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(7, 153, 235, 0.22);
+}
+
+.chatMessages {
+  padding: 26px clamp(18px, 3vw, 42px);
+}
+
+.chatMsgAvatar {
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--xena-blue, #0799eb), var(--xena-ink, #0b1d31));
+  color: #fff;
+  font-weight: 800;
+}
+
+.chatMsgBubble,
+.contextCard,
+.agentActionEntry,
+.recordCard,
+.moduleRecord,
+.detailHero,
+.infoTile,
+.factTile,
+.noticeCard,
+.moduleDetailInner {
+  border-radius: 22px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+}
+
+.msg_user .chatMsgBubble {
+  background: linear-gradient(135deg, var(--xena-blue, #0799eb), var(--xena-ink, #0b1d31));
+  color: #fff;
+}
+
+.msg_assistant .chatMsgBubble {
+  border-left: 4px solid var(--xena-blue, #0799eb);
+}
+
+.chatComposer {
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-surface) 82%, transparent);
+}
+
+.chatComposerInner {
+  max-width: 940px;
+  margin-inline: auto;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-input);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.16);
+}
+
+.chatInput {
+  min-height: 48px;
+}
+
+.chatVoiceBtn,
+.chatSendBtn,
+.moduleRefresh,
+.backToXenaBtn,
+.bootStartBtn,
+.bootRetryBtn {
+  border-radius: 999px;
+}
+
+.chatSendBtnActive,
+.moduleRefresh,
+.bootStartBtn {
+  background: linear-gradient(135deg, var(--xena-red, #e30016), var(--xena-blue, #0799eb));
+  box-shadow: 0 14px 32px rgba(7, 153, 235, 0.24);
+}
+
+.agentActivityBar {
+  border-radius: 999px;
+  border: 1px solid rgba(7, 153, 235, 0.18);
+  background: color-mix(in srgb, var(--bg-card) 86%, transparent);
+}
+
+.moduleDashboard {
+  padding: 18px;
+}
+
+.moduleHeader,
+.moduleSummaryRow,
+.moduleGrid {
+  max-width: 1440px;
+  margin-inline: auto;
+}
+
+.moduleSearch {
+  border-radius: 999px;
+}
+
+.sevBadge,
+.severityBadge,
+.statusBadge,
+.statusBadgeChip,
+.moduleDetailPriority,
+.agentActionsCount,
+.modelFallbackBadge {
+  border-radius: 999px;
+}
+
+.bootContainer {
+  padding: 44px;
+}
+
+.bootLogoCircle {
+  display: none;
+}
+
+.bootTitle {
+  letter-spacing: -0.04em;
+}
+
+@keyframes xenaScan {
+  0%, 100% { transform: translateY(0); }
+  35% { transform: translateY(10px); }
+  36% { transform: translateY(-6px); }
+  37% { transform: translateY(0); }
+}
+
+@media (max-width: 1100px) {
+  .body {
+    padding: 12px;
+    gap: 12px;
+  }
+  .agentActionsPanel,
+  .rightPanel {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .topNav {
+    height: auto;
+    min-height: 66px;
+  }
+  .topNavAppName,
+  .topNavLink,
+  .topNavLinkMono,
+  .modelSelectorLabel {
+    display: none;
+  }
+  .body {
+    height: calc(100vh - 66px);
+  }
+  .chatComposerInner {
+    border-radius: 24px;
+  }
+}
