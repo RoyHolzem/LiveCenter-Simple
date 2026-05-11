@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { ActionLogEntry } from '../hooks/useActionLog';
 import { cn } from '../chat-utils';
-import styles from '../chat-shell.module.css';
+import styles from '../styles/actions.module.css';
 
 interface AgentActionsPanelProps {
   actions: ActionLogEntry[];

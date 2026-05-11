@@ -5,7 +5,7 @@ import type { TelecomView } from '@/lib/types';
 import type { ModelInfo } from '../hooks/useModels';
 import { XenaLogo } from '@/features/landing/XenaLogo';
 import { cn } from '../chat-utils';
-import styles from '../chat-shell.module.css';
+import styles from '../styles/top-nav.module.css';
 
 export type AppMode = 'xena' | TelecomView;
 
@@ -70,7 +70,7 @@ export function TopNav({ mode, setMode, ghStatus, ghCommit, models, selectedMode
       <div className={styles.topNavLeft}>
         <div className={styles.topNavBrand}>
           <XenaLogo size={34} withWordmark={false} className={styles.topNavLogoMark} />
-          <span className={styles.topNavAppName}>Xena</span>
+          <img src="/logo.png" alt="Xena" className={styles.topNavAppName} />
         </div>
 
         <div className={styles.topNavDivider} />
@@ -125,14 +125,14 @@ export function TopNav({ mode, setMode, ghStatus, ghCommit, models, selectedMode
             onClick={() => setDropdownOpen(!dropdownOpen)}
             type="button"
           >
-            <span className={styles.modelSelectorIcon}>⬡</span>
+            <span className={styles.modelSelectorIcon}>?</span>
             <span className={styles.modelSelectorLabel}>{displayName}</span>
             {modelFallback?.fellBack && (
               <span className={styles.modelFallbackBadge} title={`Fell back from ${modelFallback.requested} to ${fallbackActualName}`}>
-                ⚠ {fallbackActualName}
+                ? {fallbackActualName}
               </span>
             )}
-            <span className={cn(styles.modelSelectorChevron, dropdownOpen && styles.modelSelectorChevronOpen)}>▾</span>
+            <span className={cn(styles.modelSelectorChevron, dropdownOpen && styles.modelSelectorChevronOpen)}>?</span>
           </button>
           {dropdownOpen && models.length > 0 && (
             <div className={styles.modelDropdown}>

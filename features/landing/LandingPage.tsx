@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Authenticator } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
-import { XenaLogo } from './XenaLogo';
 import styles from './landing.module.css';
 
 const formFields = {
@@ -25,33 +24,25 @@ const formFields = {
   },
 };
 
-const chatLines = [
-  { role: 'user', text: 'Show me SEV1 incidents affecting Luxembourg sites.' },
-  { role: 'assistant', text: 'Searching incidents, matching fibers, and preparing the operational context.' },
-  { role: 'assistant', text: 'Found the active impact cluster. Opening the record and drafting customer-safe next steps.' },
-];
-
 export function LandingPage({ onAuthenticated }: { onAuthenticated: () => void }) {
   const [authMode, setAuthMode] = useState<'none' | 'signin' | 'signup'>('none');
 
   useEffect(() => {
     document.body.style.overflow = 'auto';
+    document.documentElement.setAttribute('data-theme', 'light');
     return () => {
       document.body.style.overflow = 'hidden';
+      document.documentElement.removeAttribute('data-theme');
     };
   }, []);
 
   return (
-    <main className={styles.page}>
-      <div className={styles.glitchLayer} aria-hidden="true" />
-      <div className={styles.beamLayer} aria-hidden="true" />
-
+    <div className={styles.page}>
+      {/* Auth Modal */}
       {authMode !== 'none' && (
         <div className={styles.authOverlay} onClick={() => setAuthMode('none')}>
-          <div className={styles.authModal} onClick={(e) => e.stopPropagation()}>
-            <button className={styles.authClose} onClick={() => setAuthMode('none')} type="button" aria-label="Close auth modal">
-              ✕
-            </button>
+          <div className={styles.authModal} onClick={e => e.stopPropagation()}>
+            <button className={styles.authClose} onClick={() => setAuthMode('none')}>✕</button>
             <Authenticator
               formFields={formFields}
               initialState={authMode === 'signup' ? 'signUp' : 'signIn'}
@@ -63,72 +54,262 @@ export function LandingPage({ onAuthenticated }: { onAuthenticated: () => void }
         </div>
       )}
 
-      <nav className={`${styles.nav} navbar navbar-expand`}>
-        <div className="container-fluid px-0">
-          <a className={`${styles.brand} navbar-brand`} href="#top" aria-label="Xena home">
-            <XenaLogo size={42} withWordmark className={styles.brandLogo} />
-          </a>
-          <div className="d-flex align-items-center gap-2 ms-auto">
-            <button className="btn btn-sm btn-outline-dark" onClick={() => setAuthMode('signin')} type="button">Sign in</button>
-            <button className="btn btn-sm btn-primary" onClick={() => setAuthMode('signup')} type="button">Create account</button>
+      {/* ─── Navbar ─── */}
+      <nav className={styles.nav}>
+        <div className={styles.navInner}>
+          <img src="/logo.png" alt="Xena" className={styles.navLogo} />
+          <div className={styles.navLinks}>
+            <a href="#how-it-works">How it works</a>
+            <a href="#features">Features</a>
+          </div>
+          <div className={styles.navActions}>
+            <button className={styles.btnText} onClick={() => setAuthMode('signin')}>Sign in</button>
+            <button className={styles.btnPrimary} onClick={() => setAuthMode('signup')}>Get started</button>
           </div>
         </div>
       </nav>
 
-      <section id="top" className={`${styles.hero} container`}>
-        <div className="row justify-content-center">
-          <div className="col-12 col-xl-10">
-            <div className={styles.logoStage}>
-              <XenaLogo size={82} withWordmark className={styles.heroLogo} />
+      {/* ─── Hero ─── */}
+      <section className={styles.hero}>
+        <div className={styles.heroContent}>
+          <div className={styles.heroBadge}>Live Agentic UI</div>
+          <h1 className={styles.heroTitle}>
+            AI agents that run<br />
+            <span className={styles.heroAccent}>your operations.</span>
+          </h1>
+          <p className={styles.heroSub}>
+            Xena deploys autonomous AI agents that triage tickets, reconcile data,
+            manage incidents, and execute back-office workflows — in real-time, with full observability.
+          </p>
+          <div className={styles.heroCta}>
+            <button className={styles.btnHero} onClick={() => setAuthMode('signup')}>
+              Start free trial
+              <span className={styles.btnArrow}>→</span>
+            </button>
+            <button className={styles.btnGhost} onClick={() => setAuthMode('signin')}>
+              Watch demo
+            </button>
+          </div>
+          <div className={styles.heroMeta}>
+            <span>✓ No credit card</span>
+            <span>✓ SOC 2 compliant</span>
+            <span>✓ EU-hosted</span>
+          </div>
+        </div>
+
+        {/* ─── Live agentic showcase card ─── */}
+        <div className={styles.heroCard}>
+          <div className={styles.cardSidebar}>
+            <div className={styles.cardSidebarHeader}>
+              <span className={styles.liveDot} />
+              <span>Live agents</span>
             </div>
-
-            <div className={`${styles.showcase} card border-0 shadow-lg`}>
-              <div className={`${styles.browserBar} card-header d-flex align-items-center justify-content-between`}>
-                <div className="d-flex gap-2" aria-hidden="true">
-                  <span className={styles.dotRed} />
-                  <span className={styles.dotBlue} />
-                  <span className={styles.dotInk} />
-                </div>
-                <div className={styles.urlPill}>app.xena.lu</div>
-                <div className={styles.livePill}>LIVE</div>
-              </div>
-
-              <div className={`${styles.cardBody} card-body`}>
-                <div className={styles.chatWindow} aria-label="Xena showcase chat">
-                  {chatLines.map((line, index) => (
-                    <div
-                      key={line.text}
-                      className={`${styles.message} ${line.role === 'user' ? styles.userMessage : styles.assistantMessage}`}
-                      style={{ '--line-index': index } as CSSProperties}
-                    >
-                      <span className={styles.messageLabel}>{line.role === 'user' ? 'Operator' : 'Xena'}</span>
-                      <span className={styles.typeText}>{line.text}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className={`${styles.accessCard} card border-0`}>
-                  <div className="card-body p-4 p-md-5">
-                    <div className="row align-items-center g-4">
-                      <div className="col-md">
-                        <p className={styles.eyebrow}>Agentic operations cockpit</p>
-                        <h1 className={styles.title}>Clean command center. Fast operator actions. One Xena interface.</h1>
-                        <p className={styles.subtitle}>
-                          Streaming chat, structured operations panels, voice, Cognito security, and DynamoDB-backed telecom context stay intact behind a calmer Bootstrap-first UI.
-                        </p>
-                      </div>
-                      <div className="col-md-auto d-grid gap-2">
-                        <button className="btn btn-primary btn-lg px-4" onClick={() => setAuthMode('signup')} type="button">Launch Xena</button>
-                        <button className="btn btn-outline-dark btn-lg px-4" onClick={() => setAuthMode('signin')} type="button">Sign in</button>
-                      </div>
-                    </div>
+            <div className={styles.agentList}>
+              <AgentRow name="triage-agent" status="running" tasks={28} color="#1E73E8" />
+              <AgentRow name="reconcile" status="running" tasks={14} color="#10B981" />
+              <AgentRow name="procurement" status="idle" tasks={9} color="#7C3AED" />
+              <AgentRow name="compliance" status="running" tasks={6} color="#F59E0B" />
+              <AgentRow name="network-ops" status="running" tasks={21} color="#E1182C" />
+            </div>
+          </div>
+          <div className={styles.cardMain}>
+            <div className={styles.cardHeader}>
+              <div className={styles.cardTitleRow}>
+                <div>
+                  <div className={styles.cardTitle}>Operations overview</div>
+                  <div className={styles.cardSub}>
+                    Last 24h · <CountUp to={12408} /> tasks completed autonomously
                   </div>
                 </div>
+                <div className={styles.cardRange}>
+                  <button>1H</button>
+                  <button className={styles.rangeActive}>24H</button>
+                  <button>7D</button>
+                  <button>30D</button>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.cardKpis}>
+              <Kpi label="Throughput" value="12.4k" delta="+18%" up />
+              <Kpi label="Avg. handle" value="4.2s" delta="-31%" up />
+              <Kpi label="Cost / task" value="$0.018" delta="-42%" up />
+            </div>
+
+            <div className={styles.cardChart}>
+              <svg viewBox="0 0 600 160" preserveAspectRatio="none" width="100%" height="160">
+                <defs>
+                  <linearGradient id="cline" x1="0" x2="1" y1="0" y2="0">
+                    <stop offset="0%" stopColor="#0E2347" />
+                    <stop offset="100%" stopColor="#E1182C" />
+                  </linearGradient>
+                  <linearGradient id="cfill" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stopColor="#0E2347" stopOpacity="0.12" />
+                    <stop offset="100%" stopColor="#0E2347" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                <path
+                  d="M0,130 C50,125 100,118 150,110 C200,102 250,95 300,88 C350,80 400,72 450,62 C500,52 550,46 600,38 L600,160 L0,160 Z"
+                  fill="url(#cfill)"
+                />
+                <path
+                  d="M0,130 C50,125 100,118 150,110 C200,102 250,95 300,88 C350,80 400,72 450,62 C500,52 550,46 600,38"
+                  fill="none" stroke="url(#cline)" strokeWidth="2.5" strokeLinecap="round"
+                >
+                  <animate attributeName="stroke-dasharray" from="0 2000" to="2000 0" dur="2s" fill="freeze" />
+                </path>
+              </svg>
+            </div>
+
+            <div className={styles.cardTask}>
+              <div className={styles.cardTaskAvatar}>
+                <img src="/logo.png" alt="" className={styles.cardTaskLogo} />
+              </div>
+              <div className={styles.cardTaskBody}>
+                <div className={styles.cardTaskHead}>
+                  <span className={styles.cardTaskName}>triage-agent</span>
+                  <span className={styles.badgeOk}>resolved</span>
+                  <span className={styles.cardTaskTime}>just now</span>
+                </div>
+                <TypingText text="Ticket #4821 routed to network-ops · severity downgraded to SEV4 · customer notified via email." />
               </div>
             </div>
           </div>
         </div>
       </section>
-    </main>
+
+      {/* ─── How it works ─── */}
+      <section id="how-it-works" className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <div className={styles.sectionBadge}>How it works</div>
+          <h2 className={styles.sectionTitle}>Three steps to autonomous operations</h2>
+        </div>
+        <div className={styles.stepsGrid}>
+          <Step num="01" title="Connect your systems" desc="Plug in ticketing, APIs, databases, and messaging. Xena agents learn your workflows in minutes." icon="🔌" />
+          <Step num="02" title="Deploy agents" desc="Choose from pre-built agent templates or create custom ones. Each agent has specific skills and guardrails." icon="🤖" />
+          <Step num="03" title="Watch them work" desc="Agents execute tasks 24/7 with full observability. Every action is logged, auditable, and reversible." icon="📊" />
+        </div>
+      </section>
+
+      {/* ─── Features ─── */}
+      <section id="features" className={`${styles.section} ${styles.sectionAlt}`}>
+        <div className={styles.sectionHeader}>
+          <div className={styles.sectionBadge}>Capabilities</div>
+          <h2 className={styles.sectionTitle}>Enterprise-grade agentic infrastructure</h2>
+        </div>
+        <div className={styles.featuresGrid}>
+          <Feature icon="⚡" title="Real-time execution" desc="Agents act in milliseconds. No queues, no batch processing. Live tool execution visible in the cockpit." />
+          <Feature icon="🔒" title="Guardrails & RBAC" desc="Every agent operates within strict permission boundaries. Role-based access, approval flows, and audit trails." />
+          <Feature icon="👁" title="Full observability" desc="See every tool call, API request, and decision your agents make. Real-time logs with CloudWatch integration." />
+          <Feature icon="🇪🇺" title="EU-hosted & compliant" desc="All data processed in EU regions. SOC 2 Type II certified. GDPR-compliant by design." />
+          <Feature icon="🔄" title="Self-healing" desc="Agents detect failures, retry with backoff, and escalate to humans when confidence drops below threshold." />
+          <Feature icon="🧩" title="API-first" desc="REST API for everything. Integrate with ServiceNow, Jira, Slack, Teams, or your custom tooling." />
+        </div>
+      </section>
+
+      {/* ─── CTA ─── */}
+      <section className={styles.ctaSection}>
+        <h2 className={styles.ctaTitle}>Ready to deploy your first agent?</h2>
+        <p className={styles.ctaSub}>Start with pre-built templates for telecom, IT ops, and back-office automation.</p>
+        <button className={styles.btnHero} onClick={() => setAuthMode('signup')}>
+          Get started free <span className={styles.btnArrow}>→</span>
+        </button>
+      </section>
+
+      {/* ─── Footer ─── */}
+      <footer className={styles.footer}>
+        <div className={styles.footerInner}>
+          <img src="/logo.png" alt="Xena" className={styles.footerLogo} />
+          <div className={styles.footerLinks}>
+            <a href="https://github.com/RoyHolzem/Xena" target="_blank" rel="noopener">GitHub</a>
+            <a href="#">Documentation</a>
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+          </div>
+          <div className={styles.footerCopy}>© 2026 Xena. All rights reserved.</div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+/* ─── Sub-components ─── */
+
+function TypingText({ text }: { text: string }) {
+  const [displayed, setDisplayed] = useState('');
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setStarted(true), 1200);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (!started) return;
+    if (displayed.length >= text.length) return;
+    const t = setTimeout(() => setDisplayed(text.slice(0, displayed.length + 1)), 20);
+    return () => clearTimeout(t);
+  }, [displayed, started, text]);
+
+  return <span>{displayed}<span className={styles.cursor}>▍</span></span>;
+}
+
+function CountUp({ to }: { to: number }) {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    const start = performance.now();
+    const dur = 1400;
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - start) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setN(Math.round(to * eased));
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [to]);
+  return <>{n.toLocaleString()}</>;
+}
+
+function AgentRow({ name, status, tasks, color }: { name: string; status: string; tasks: number; color: string }) {
+  return (
+    <div className={styles.agentRow}>
+      <span className={styles.agentDot} style={{ background: color }} />
+      <span className={styles.agentName}>{name}</span>
+      <span className={styles.agentTasks}>{tasks}</span>
+      <span className={`${styles.agentStatus} ${status === 'running' ? styles.statusActive : ''}`}>
+        {status}
+      </span>
+    </div>
+  );
+}
+
+function Kpi({ label, value, delta, up }: { label: string; value: string; delta: string; up?: boolean }) {
+  return (
+    <div className={styles.kpi}>
+      <div className={styles.kpiLabel}>{label}</div>
+      <div className={styles.kpiValue}>{value}</div>
+      <div className={`${styles.kpiDelta} ${up ? styles.kpiUp : styles.kpiDown}`}>{delta}</div>
+    </div>
+  );
+}
+
+function Step({ num, title, desc, icon }: { num: string; title: string; desc: string; icon: string }) {
+  return (
+    <div className={styles.step}>
+      <div className={styles.stepNum}>{num}</div>
+      <div className={styles.stepIcon}>{icon}</div>
+      <h3 className={styles.stepTitle}>{title}</h3>
+      <p className={styles.stepDesc}>{desc}</p>
+    </div>
+  );
+}
+
+function Feature({ icon, title, desc }: { icon: string; title: string; desc: string }) {
+  return (
+    <div className={styles.feature}>
+      <div className={styles.featureIcon}>{icon}</div>
+      <h3 className={styles.featureTitle}>{title}</h3>
+      <p className={styles.featureDesc}>{desc}</p>
+    </div>
   );
 }
