@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import type { XenaUiAction } from '@/lib/xena-ui-actions';
-import type { XenaActionEvent } from '@/lib/types';
+import type { XenaActionEvent, TelecomView } from '@/lib/types';
 import { publicConfig } from './chat-config';
 import { useAuthToken } from '../auth/AuthWrapper';
 import { useChat } from './hooks/useChat';
@@ -22,7 +22,6 @@ import { ModuleDashboard } from './components/ModuleDashboard';
 import { BootScreen } from './components/BootScreen';
 import { AgentActivityBar } from './components/AgentActivityBar';
 
-import type { TelecomView } from '@/lib/types';
 import styles from './styles/shell.module.css';
 
 const DEFAULT_MODEL = 'inceptionlabs/mercury-2';
@@ -112,7 +111,7 @@ export function ChatShell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const { matchedRecord, matchedView } = useChatContext(
+  const { matchedRecord, matchedView, pinnedCards } = useChatContext(
     chat.messages,
     telecom.recordsByView,
   );
@@ -126,6 +125,13 @@ export function ChatShell() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchedRecord, matchedView]);
+
+  // Navigate to a record: switch mode & view, select the record
+  const handleNavigateToRecord = useCallback((view: TelecomView, recordId: string) => {
+    setMode(view as AppMode);
+    setContextView(view);
+    telecom.selectRecord(view, recordId);
+  }, [telecom]);
 
   const displayRecord = matchedRecord || telecom.selectedRecord;
 
@@ -189,6 +195,8 @@ export function ChatShell() {
                 voiceActive={voice.isActive}
                 matchedRecord={matchedRecord}
                 matchedView={matchedView}
+                pinnedCards={pinnedCards}
+                onNavigateToRecord={handleNavigateToRecord}
               />
             </div>
 

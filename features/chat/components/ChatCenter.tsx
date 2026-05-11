@@ -2,8 +2,8 @@
 
 import type { ChatMessage, PresenceState, TelecomRecord, TelecomView } from '@/lib/types';
 import type { VoiceState } from '../hooks/useVoice';
+import type { PinnedCard } from './ContextCard';
 import { cn } from '../chat-utils';
-import { XenaLogo } from '@/features/landing/XenaLogo';
 import { ContextCard } from './ContextCard';
 import styles from '../styles/chat-center.module.css';
 
@@ -27,6 +27,8 @@ interface ChatCenterProps {
   voiceActive: boolean;
   matchedRecord: TelecomRecord | null;
   matchedView: TelecomView | null;
+  pinnedCards: PinnedCard[];
+  onNavigateToRecord: (view: TelecomView, recordId: string) => void;
 }
 
 export function ChatCenter({
@@ -48,6 +50,8 @@ export function ChatCenter({
   voiceActive,
   matchedRecord,
   matchedView,
+  pinnedCards,
+  onNavigateToRecord,
 }: ChatCenterProps) {
   // Determine voice-specific avatar state
   const effectiveAvatarState = voiceActive
@@ -78,12 +82,11 @@ export function ChatCenter({
               : statusLabel
     : statusLabel;
 
-  // Figure out which assistant message the context card should attach to:
-  // the latest assistant message that has content
-  const lastAssistantIdx = [...messages]
-    .map((m, i) => ({ role: m.role, content: m.content, idx: i }))
-    .reverse()
-    .find((m) => m.role === 'assistant' && m.content.trim())?.idx ?? -1;
+  // Build a map of messageId -> pinned card for quick lookup
+  const cardByMessage = new Map<string, PinnedCard>();
+  for (const card of pinnedCards) {
+    cardByMessage.set(card.messageId, card);
+  }
 
   return (
     <div className={styles.chatCenter}>
@@ -91,7 +94,7 @@ export function ChatCenter({
       <div className={styles.chatAvatarBar}>
         <div className={styles.chatAvatarWrap}>
           <div className={cn(styles.chatAvatarCircle, styles[`avatar_${effectiveAvatarState}`])}>
-            <XenaLogo size={32} withWordmark={false} className={styles.chatAvatarLogo} />
+            <img src="/favicon.png" alt="" width={32} height={32} className={styles.chatAvatarLogo} />
           </div>
           <div className={cn(styles.chatAvatarRing, styles[`ring_${effectiveAvatarState}`])} />
         </div>
@@ -115,38 +118,46 @@ export function ChatCenter({
             </p>
           </div>
         )}
-        {messages.map((message, index) => (
-          <div
-            key={message.id}
-            className={cn(styles.chatMessage, styles[`msg_${message.role}`], styles.msgEnter)}
-            style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
-          >
-            <div className={styles.chatMsgAvatar}>
-              {message.role === 'user' ? 'R' : <XenaLogo size={20} withWordmark={false} className={styles.chatMsgLogo} />}
-            </div>
-            <div className={styles.chatMsgContent}>
-              <div className={styles.chatMsgRole}>
-                {message.role === 'user' ? 'Roy' : assistantName}
-                {message.source === 'voice' && (
-                  <span className={styles.voiceTag}>🎤</span>
-                )}
+        {messages.map((message, index) => {
+          const pinnedCard = cardByMessage.get(message.id);
+          return (
+            <div
+              key={message.id}
+              className={cn(styles.chatMessage, styles[`msg_${message.role}`], styles.msgEnter)}
+              style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
+            >
+              <div className={styles.chatMsgAvatar}>
+                {message.role === 'user' ? 'R' : <img src="/favicon.png" alt="" width={20} height={20} className={styles.chatMsgLogo} />}
               </div>
-              <div className={styles.chatMsgBubble}>
-                {message.content || (
-                  <div className={styles.typingIndicator}>
-                    <span /><span /><span />
+              <div className={styles.chatMsgContent}>
+                <div className={styles.chatMsgRole}>
+                  {message.role === 'user' ? 'Roy' : assistantName}
+                  {message.source === 'voice' && (
+                    <span className={styles.voiceTag}>🎤</span>
+                  )}
+                </div>
+                <div className={styles.chatMsgBubble}>
+                  {message.content || (
+                    <div className={styles.typingIndicator}>
+                      <span /><span /><span />
+                    </div>
+                  )}
+                </div>
+                {/* Pinned context card: persists on this message */}
+                {pinnedCard && (
+                  <div className={styles.chatContextCardWrap}>
+                    <ContextCard
+                      record={pinnedCard.record}
+                      view={pinnedCard.view}
+                      compact
+                      onNavigate={() => onNavigateToRecord(pinnedCard.view, pinnedCard.record.recordId)}
+                    />
                   </div>
                 )}
               </div>
-              {/* Inline context card: attach to the latest assistant message */}
-              {matchedRecord && matchedView && index === lastAssistantIdx && (
-                <div className={styles.chatContextCardWrap}>
-                  <ContextCard record={matchedRecord} view={matchedView} compact />
-                </div>
-              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
         <div ref={messagesEndRef} />
       </div>
 
@@ -211,7 +222,7 @@ export function ChatCenter({
               matchedRecord
                 ? `Follow up on: ${matchedRecord.title.substring(0, 60)}${matchedRecord.title.length > 60 ? '...' : ''}`
                 : voiceActive
-                  ? 'Voice mode active — speak naturally...'
+                  ? 'Voice mode active - speak naturally...'
                   : 'Ask Xena about incidents, events, planned works, customers, sites, or services...'
             }
             rows={1}
@@ -230,13 +241,13 @@ export function ChatCenter({
         </div>
         <div className={styles.chatComposerHint}>
           {voiceActive
-            ? voiceState === 'recording' ? '🎙️ Recording — tap to stop'
-              : voiceState === 'transcribing' ? '✨ Transcribing...'
+            ? voiceState === 'recording' ? '🔴 Recording - tap to stop'
+              : voiceState === 'transcribing' ? '✓ Transcribing...'
               : voiceState === 'responding' ? '🧠 Thinking...'
               : voiceState === 'playing' ? '🔊 Speaking...'
               : 'Processing...'
             : matchedRecord
-              ? `📋 Context: ${matchedRecord.recordId}`
+              ? `📌 Context: ${matchedRecord.recordId}`
               : 'Shift + Enter for newline'
           }
         </div>

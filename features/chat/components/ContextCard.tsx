@@ -14,9 +14,10 @@ interface ContextCardProps {
   record: TelecomRecord;
   view: TelecomView;
   compact?: boolean;
+  onNavigate?: () => void;
 }
 
-export function ContextCard({ record, view, compact }: ContextCardProps) {
+export function ContextCard({ record, view, compact, onNavigate }: ContextCardProps) {
   const [expanded, setExpanded] = useState(false);
   const isExpanded = !compact || expanded;
   const sevTone = severityTone(record.severity);
@@ -36,10 +37,15 @@ export function ContextCard({ record, view, compact }: ContextCardProps) {
         styles.contextCard,
         styles[`tintBg_${sevTone}`],
         compact && !expanded && styles.contextCardCompact,
+        onNavigate && styles.contextCardClickable,
       )}
+      onClick={onNavigate}
+      role={onNavigate ? 'button' : undefined}
+      tabIndex={onNavigate ? 0 : undefined}
     >
       <div className={styles.contextCardHeader}>
         <div className={styles.contextCardType}>{typeLabel}</div>
+        <div className={styles.contextCardId}>{record.recordId}</div>
         <div className={styles.contextCardBadges}>
           <span className={cn(styles.sevBadge, styles[`tone_${sevTone}`])}>
             {record.severity}
@@ -67,13 +73,13 @@ export function ContextCard({ record, view, compact }: ContextCardProps) {
             <strong>{formatDateTime(record.endTime)}</strong>
           </div>
         )}
-        {record.companyName && record.companyName !== '—' && (
+        {record.companyName && record.companyName !== '-' && (
           <div className={styles.contextCardMetaRow}>
             <span>Customer</span>
             <strong>{record.companyName}</strong>
           </div>
         )}
-        {record.city && record.city !== '—' && (
+        {record.city && record.city !== '-' && (
           <div className={styles.contextCardMetaRow}>
             <span>Location</span>
             <strong>{record.city}</strong>
@@ -96,7 +102,7 @@ export function ContextCard({ record, view, compact }: ContextCardProps) {
         <button
           type="button"
           className={styles.contextCardExpandBtn}
-          onClick={() => setExpanded((v) => !v)}
+          onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
           aria-expanded={expanded}
         >
           {expanded ? 'Less detail' : 'More detail'}
@@ -115,4 +121,10 @@ export function ContextCard({ record, view, compact }: ContextCardProps) {
       )}
     </div>
   );
+}
+
+export interface PinnedCard {
+  messageId: string;
+  record: TelecomRecord;
+  view: TelecomView;
 }
