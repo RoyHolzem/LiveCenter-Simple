@@ -1,7 +1,7 @@
 'use client';
 
 import type { AgentActivityState } from '../hooks/useCockpitState';
-import styles from '../chat-shell.module.css';
+import styles from '../styles/activity.module.css';
 
 interface AgentActivityBarProps {
   activity: AgentActivityState;

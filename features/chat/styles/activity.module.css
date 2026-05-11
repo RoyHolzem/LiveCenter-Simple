@@ -1,0 +1,4 @@
+.agentActivityBar { min-height: 38px; display: flex; align-items: center; gap: 10px; padding: 0 14px; border: 1px solid rgba(7,153,235,.18); border-radius: 999px; background: color-mix(in srgb, var(--bg-card) 86%, transparent); color: var(--text-secondary); font-size: .78rem; font-weight: 700; backdrop-filter: blur(18px); }
+.agentActivityDot { width: 7px; height: 7px; border-radius: 999px; background: var(--green); box-shadow: 0 0 10px var(--green-glow); animation: pulse 1.8s ease-in-out infinite; }
+.agentActivityText { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@keyframes pulse { 50% { opacity: .35; transform: scale(.8); } }

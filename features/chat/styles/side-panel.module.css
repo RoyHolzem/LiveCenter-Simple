@@ -1,0 +1,65 @@
+.sevBadge { composes: sevBadge from './shared.module.css'; }
+.statusBadgeChip { composes: statusBadgeChip from './shared.module.css'; }
+.tone_critical { composes: tone_critical from './shared.module.css'; }
+.tone_high { composes: tone_high from './shared.module.css'; }
+.tone_major { composes: tone_major from './shared.module.css'; }
+.tone_medium { composes: tone_medium from './shared.module.css'; }
+.tone_minor { composes: tone_minor from './shared.module.css'; }
+.tone_low { composes: tone_low from './shared.module.css'; }
+.tone_info { composes: tone_info from './shared.module.css'; }
+.stat_ok { composes: stat_ok from './shared.module.css'; }
+.stat_warn { composes: stat_warn from './shared.module.css'; }
+.stat_muted { composes: stat_muted from './shared.module.css'; }
+.stat_neutral { composes: stat_neutral from './shared.module.css'; }
+.tintBg_critical { composes: tintBg_critical from './shared.module.css'; }
+.tintBg_high { composes: tintBg_high from './shared.module.css'; }
+.tintBg_major { composes: tintBg_major from './shared.module.css'; }
+.tintBg_medium { composes: tintBg_medium from './shared.module.css'; }
+.tintBg_minor { composes: tintBg_minor from './shared.module.css'; }
+.tintBg_low { composes: tintBg_low from './shared.module.css'; }
+.tintBg_info { composes: tintBg_info from './shared.module.css'; }
+.toneRow_critical { composes: toneRow_critical from './shared.module.css'; }
+.toneRow_high { composes: toneRow_high from './shared.module.css'; }
+.toneRow_major { composes: toneRow_major from './shared.module.css'; }
+.toneRow_medium { composes: toneRow_medium from './shared.module.css'; }
+.toneRow_minor { composes: toneRow_minor from './shared.module.css'; }
+.toneRow_low { composes: toneRow_low from './shared.module.css'; }
+.toneRow_info { composes: toneRow_info from './shared.module.css'; }
+.sidePanel { min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); border-radius: 28px; background: color-mix(in srgb, var(--bg-card) 92%, transparent); box-shadow: 0 26px 70px rgba(0,0,0,.2); backdrop-filter: blur(20px); }
+.rightPanel { animation: slideIn .22s ease both; }
+.panelVisible { display: flex; }
+.panelEmpty { flex: 1; display: grid; place-items: center; align-content: center; gap: 12px; padding: 30px 20px; color: var(--text-tertiary); text-align: center; font-size: .84rem; line-height: 1.45; }
+.panelEmptyIcon { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 999px; background: rgba(7,153,235,.12); color: #62c5ff; }
+.detailWrap { flex: 1; min-height: 0; overflow: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+.recordSwap { animation: fadeUp .2s ease both; }
+.detailHero { padding: 18px; border: 1px solid var(--border); border-radius: 22px; box-shadow: 0 16px 40px rgba(0,0,0,.12); }
+.detailHeader { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
+.detailKindLabel { color: var(--text-tertiary); font-size: .68rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.detailTitle { color: var(--text); font-size: 1.02rem; font-weight: 900; line-height: 1.3; overflow-wrap: anywhere; }
+.detailRecordId { color: var(--text-secondary); font-family: 'SF Mono','Fira Code',monospace; font-size: .72rem; overflow-wrap: anywhere; }
+.detailBadges { display: flex; flex-wrap: wrap; gap: 6px; }
+.detailSummary { margin-top: 12px; color: var(--text-secondary); font-size: .82rem; line-height: 1.55; }
+.detailTimes { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); display: grid; gap: 7px; }
+.detailTimeRow { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 10px; align-items: baseline; color: var(--text-tertiary); font-size: .74rem; }
+.detailTimeRow strong { color: var(--text-secondary); text-align: right; overflow-wrap: anywhere; }
+.expandSection { border: 1px solid var(--border); border-radius: 18px; background: rgba(255,255,255,.025); overflow: hidden; }
+.expandHeader { width: 100%; min-height: 42px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 12px 0 14px; border: 0; background: transparent; color: var(--text); font: inherit; cursor: pointer; text-align: left; }
+.expandHeader:hover { background: rgba(7,153,235,.06); }
+.expandHeaderTitle { display: inline-flex; align-items: center; gap: 8px; min-width: 0; font-size: .78rem; font-weight: 900; }
+.expandHeaderCount { min-width: 20px; height: 20px; display: inline-grid; place-items: center; border-radius: 999px; background: rgba(7,153,235,.14); color: #62c5ff; font-size: .68rem; }
+.expandChevron { flex: 0 0 auto; color: var(--text-tertiary); transition: transform .15s; }
+.expandChevronOpen { transform: rotate(90deg); }
+.expandBody { padding: 0 12px 12px; }
+.factGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.factTile { min-width: 0; padding: 10px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-card); box-shadow: 0 16px 40px rgba(0,0,0,.12); }
+.factTileLabel { color: var(--text-tertiary); font-size: .64rem; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; margin-bottom: 5px; }
+.factTileValue { color: var(--text); font-size: .8rem; line-height: 1.4; overflow-wrap: anywhere; }
+.detailFactList { display: grid; gap: 8px; }
+.detailFactRow { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border); font-size: .76rem; }
+.detailFactRow:last-child { border-bottom: 0; padding-bottom: 0; }
+.detailFactRow span { color: var(--text-tertiary); }
+.detailFactRow strong { color: var(--text); text-align: right; overflow-wrap: anywhere; }
+.noticeText { color: var(--text-secondary); font-size: .8rem; line-height: 1.55; padding: 10px; border-radius: 14px; background: rgba(255,176,32,.08); border: 1px solid rgba(255,176,32,.14); }
+@keyframes slideIn { from { opacity:0; transform: translateX(8px); } to { opacity:1; transform: translateX(0); } }
+@keyframes fadeUp { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform: translateY(0); } }
+@media(max-width:1100px){ .sidePanel{ display:none; } }

@@ -23,7 +23,7 @@ import { BootScreen } from './components/BootScreen';
 import { AgentActivityBar } from './components/AgentActivityBar';
 
 import type { TelecomView } from '@/lib/types';
-import styles from './chat-shell.module.css';
+import styles from './styles/shell.module.css';
 
 const DEFAULT_MODEL = 'inceptionlabs/mercury-2';
 
