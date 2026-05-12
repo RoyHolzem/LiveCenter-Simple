@@ -21,6 +21,13 @@ interface ModuleDashboardProps {
   onBackToXena: () => void;
 }
 
+const VIEW_ICON: Record<TelecomView, string> = {
+  incidents: '⚡',
+  events: '📡',
+  'planned-works': '🔧',
+  orders: '📦',
+};
+
 export function ModuleDashboard({ view, onBackToXena }: ModuleDashboardProps) {
   const getAuthToken = useAuthToken();
   const [search, setSearch] = useState('');
@@ -106,88 +113,164 @@ export function ModuleDashboard({ view, onBackToXena }: ModuleDashboardProps) {
             <div className={styles.moduleEmpty}>No records found.</div>
           ) : (
             filteredRecords.map((record, idx) => (
-              <button
+              <RecordCard
                 key={record.recordId}
-                type="button"
-                className={cn(
-                  styles.moduleRecordCard,
-                  styles[`toneRow_${severityTone(record.severity)}`],
-                  selectedRecord?.recordId === record.recordId && styles.moduleRecordCardActive
-                )}
-                style={{ animationDelay: `${Math.min(idx * 25, 240)}ms` }}
+                record={record}
+                view={view}
+                isActive={selectedRecord?.recordId === record.recordId}
+                index={idx}
                 onClick={() => setSelectedRecordIds((prev) => ({ ...prev, [view]: record.recordId }))}
-              >
-                <div className={styles.moduleRecordHead}>
-                  <div className={styles.moduleRecordBadges}>
-                    <span className={cn(styles.sevBadge, styles[`tone_${severityTone(record.severity)}`])}>{record.severity}</span>
-                    <span className={cn(styles.statusBadgeChip, styles[`stat_${statusTone(record.status)}`])}>
-                      {record.status.replaceAll('_', ' ')}
-                    </span>
-                  </div>
-                  <time>{formatRelative(record.updatedAt)}</time>
-                </div>
-                <div className={styles.moduleRecordTitle}>{record.title}</div>
-                <div className={styles.moduleRecordSummary}>{record.summary}</div>
-                <div className={styles.moduleRecordMeta}>
-                  <span>{record.companyName}</span>
-                  <span>·</span>
-                  <span>{record.serviceType}</span>
-                  <span>·</span>
-                  <span>{record.city}</span>
-                </div>
-              </button>
+              />
             ))
           )}
         </div>
 
         <div className={styles.moduleDetail}>
           {selectedRecord ? (
-            <div key={selectedRecord.recordId} className={styles.moduleDetailInner}>
-              <div className={styles.moduleDetailTitle}>{selectedRecord.title}</div>
-              <div className={styles.moduleDetailBadges}>
-                <span className={cn(styles.sevBadge, styles[`tone_${severityTone(selectedRecord.severity)}`])}>{selectedRecord.severity}</span>
-                <span className={cn(styles.statusBadgeChip, styles[`stat_${statusTone(selectedRecord.status)}`])}>
-                  {selectedRecord.status.replaceAll('_', ' ')}
-                </span>
-                <span className={styles.moduleDetailPriority}>{selectedRecord.priority}</span>
-              </div>
-              <div className={styles.moduleDetailSummary}>{selectedRecord.summary}</div>
-
-              <div className={styles.moduleDetailTimes}>
-                <span>Start: {formatDateTime(selectedRecord.startTime)}</span>
-                {selectedRecord.endTime && <span>End: {formatDateTime(selectedRecord.endTime)}</span>}
-              </div>
-
-              <div className={styles.moduleDetailHighlights}>
-                {selectedRecord.highlights.map((h) => (
-                  <div key={h.label} className={styles.moduleDetailHighlight}>
-                    <div className={styles.moduleDetailHLLabel}>{h.label}</div>
-                    <div className={styles.moduleDetailHLValue}>{h.value}</div>
-                  </div>
-                ))}
-              </div>
-
-              <div className={styles.moduleDetailFacts}>
-                {selectedRecord.facts.map((f) => (
-                  <div key={f.label} className={styles.moduleDetailFactRow}>
-                    <span>{f.label}</span>
-                    <strong>{f.value}</strong>
-                  </div>
-                ))}
-              </div>
-
-              {selectedRecord.customerText && (
-                <div className={styles.moduleDetailNotice}>
-                  <div className={styles.panelSectionTitle}>Customer notice</div>
-                  <p>{selectedRecord.customerText}</p>
-                </div>
-              )}
-            </div>
+            <RecordDetail record={selectedRecord} view={view} />
           ) : (
             <div className={styles.moduleEmpty}>Select a record to view details</div>
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ─── Record Card (list item) ─── */
+
+function RecordCard({
+  record,
+  view,
+  isActive,
+  index,
+  onClick,
+}: {
+  record: TelecomRecord;
+  view: TelecomView;
+  isActive: boolean;
+  index: number;
+  onClick: () => void;
+}) {
+  const tone = severityTone(record.severity);
+  return (
+    <button
+      type="button"
+      className={cn(
+        styles.moduleRecordCard,
+        isActive && styles.moduleRecordCardActive,
+        styles[`toneRow_${tone}`],
+      )}
+      style={{ animationDelay: `${Math.min(index * 25, 240)}ms` }}
+      onClick={onClick}
+    >
+      {/* Top line: record ID + relative time */}
+      <div className={styles.moduleRecordHead}>
+        <span className={styles.moduleRecordId}>
+          {VIEW_ICON[view]} {record.recordId}
+        </span>
+        <time>{formatRelative(record.updatedAt)}</time>
+      </div>
+
+      {/* Title */}
+      <div className={styles.moduleRecordTitle}>{record.title}</div>
+
+      {/* Badges */}
+      <div className={styles.moduleRecordBadges}>
+        <span className={cn(styles.sevBadge, styles[`tone_${tone}`])}>{record.severity}</span>
+        <span className={cn(styles.statusBadgeChip, styles[`stat_${statusTone(record.status)}`])}>
+          {record.status.replaceAll('_', ' ')}
+        </span>
+      </div>
+
+      {/* Meta row */}
+      <div className={styles.moduleRecordMeta}>
+        {record.companyName && <span>{record.companyName}</span>}
+        {record.serviceType && <span>{record.serviceType}</span>}
+        {record.city && <span>{record.city}</span>}
+      </div>
+    </button>
+  );
+}
+
+/* ─── Record Detail (right pane) ─── */
+
+function RecordDetail({ record, view }: { record: TelecomRecord; view: TelecomView }) {
+  const tone = severityTone(record.severity);
+  const sTone = statusTone(record.status);
+
+  return (
+    <div key={record.recordId} className={styles.moduleDetailInner}>
+      {/* Hero header with ID */}
+      <div className={cn(styles.detailHero, styles[`tintBg_${tone}`])}>
+        <div className={styles.detailHeroKind}>
+          {VIEW_ICON[view]} {view.replace('-', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+        </div>
+        <div className={styles.detailHeroId}>{record.recordId}</div>
+        <div className={styles.detailHeroTitle}>{record.title}</div>
+        <div className={styles.detailHeroBadges}>
+          <span className={cn(styles.sevBadge, styles[`tone_${tone}`])}>{record.severity}</span>
+          <span className={cn(styles.statusBadgeChip, styles[`stat_${sTone}`])}>
+            {record.status.replaceAll('_', ' ')}
+          </span>
+          <span className={styles.moduleDetailPriority}>{record.priority}</span>
+        </div>
+      </div>
+
+      {/* Summary */}
+      {record.summary && (
+        <div className={styles.moduleDetailSummary}>{record.summary}</div>
+      )}
+
+      {/* Timestamps */}
+      <div className={styles.detailTimes}>
+        <div className={styles.detailTimeRow}>
+          <span>Start</span>
+          <strong>{formatDateTime(record.startTime)}</strong>
+        </div>
+        {record.endTime && (
+          <div className={styles.detailTimeRow}>
+            <span>End</span>
+            <strong>{formatDateTime(record.endTime)}</strong>
+          </div>
+        )}
+        <div className={styles.detailTimeRow}>
+          <span>Updated</span>
+          <strong>{formatDateTime(record.updatedAt)}</strong>
+        </div>
+      </div>
+
+      {/* Highlights */}
+      {record.highlights.length > 0 && (
+        <div className={styles.moduleDetailHighlights}>
+          {record.highlights.map((h) => (
+            <div key={h.label} className={styles.moduleDetailHighlight}>
+              <div className={styles.moduleDetailHLLabel}>{h.label}</div>
+              <div className={styles.moduleDetailHLValue}>{h.value}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Facts */}
+      {record.facts.length > 0 && (
+        <div className={styles.moduleDetailFacts}>
+          {record.facts.map((f) => (
+            <div key={f.label} className={styles.moduleDetailFactRow}>
+              <span>{f.label}</span>
+              <strong>{f.value}</strong>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Customer notice */}
+      {record.customerText && (
+        <div className={styles.moduleDetailNotice}>
+          <div className={styles.panelSectionTitle}>Customer notice</div>
+          <p>{record.customerText}</p>
+        </div>
+      )}
     </div>
   );
 }

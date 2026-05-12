@@ -20,6 +20,13 @@
 .toneRow_minor { composes: toneRow_minor from './shared.module.css'; }
 .toneRow_low { composes: toneRow_low from './shared.module.css'; }
 .toneRow_info { composes: toneRow_info from './shared.module.css'; }
+.tintBg_critical { composes: tintBg_critical from './shared.module.css'; }
+.tintBg_high { composes: tintBg_high from './shared.module.css'; }
+.tintBg_major { composes: tintBg_major from './shared.module.css'; }
+.tintBg_medium { composes: tintBg_medium from './shared.module.css'; }
+.tintBg_minor { composes: tintBg_minor from './shared.module.css'; }
+.tintBg_low { composes: tintBg_low from './shared.module.css'; }
+.tintBg_info { composes: tintBg_info from './shared.module.css'; }
 .moduleDashboard { flex: 1; min-width: 0; min-height: 0; overflow: auto; padding: 18px; border: 1px solid var(--border); border-radius: 28px; background: color-mix(in srgb, var(--bg-card) 92%, transparent); box-shadow: 0 26px 70px rgba(0,0,0,.2); backdrop-filter: blur(20px); }
 .moduleHeader, .moduleSummaryRow, .moduleGrid { max-width: 1440px; margin-inline: auto; }
 .moduleHeader { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:18px; }
@@ -61,4 +68,20 @@
 .moduleDetailNotice { margin-top:14px; padding:12px; border:1px solid rgba(255,176,32,.15); border-radius:14px; background:rgba(255,176,32,.08); color:var(--text-secondary); font-size:.82rem; line-height:1.5; }
 .moduleDetailNotice p { margin:0; }
 .moduleEmpty { min-height:180px; display:grid; place-items:center; color:var(--text-tertiary); text-align:center; padding:24px; }
+
+/* ─── Record ID (card list) ─── */
+.moduleRecordId { font-family:ui-monospace,'SF Mono','Fira Code',monospace; font-size:.72rem; font-weight:700; color:var(--accent-bright); letter-spacing:.02em; }
+
+/* ─── Detail Hero (detail panel header) ─── */
+.detailHero { padding:18px; border-radius:16px; border:1px solid var(--border); background:var(--bg-card); box-shadow:0 8px 24px rgba(0,0,0,.08); margin-bottom:14px; }
+.detailHeroKind { font-size:.64rem; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--text-tertiary); margin-bottom:4px; }
+.detailHeroId { font-family:ui-monospace,'SF Mono','Fira Code',monospace; font-size:.82rem; font-weight:700; color:var(--accent-bright); letter-spacing:.01em; margin-bottom:8px; padding:4px 10px; background:rgba(7,153,235,.1); border-radius:6px; display:inline-block; }
+.detailHeroTitle { font-size:1.15rem; font-weight:950; line-height:1.3; letter-spacing:-.02em; color:var(--text); margin-bottom:10px; }
+.detailHeroBadges { display:flex; flex-wrap:wrap; gap:6px; }
+
+/* ─── Detail Timestamps ─── */
+.detailTimes { margin-top:14px; padding-top:14px; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:6px; }
+.detailTimeRow { display:flex; justify-content:space-between; font-size:.78rem; color:var(--text-tertiary); }
+.detailTimeRow strong { color:var(--text-secondary); }
+
 @media(max-width:900px){ .moduleHeader{align-items:stretch; flex-direction:column;} .moduleToolbar{align-items:stretch; flex-direction:column;} .moduleSearch{min-width:0; width:100%;} .moduleSummaryRow{grid-template-columns:repeat(2,1fr);} .moduleGrid{grid-template-columns:1fr;} }
