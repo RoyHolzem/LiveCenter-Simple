@@ -38,6 +38,11 @@
   z-index: 1;
 }
 
+.bodyFullWidth {
+  grid-template-columns: 1fr;
+  padding: 12px 18px;
+}
+
 .chatColumn {
   min-width: 0;
   min-height: 0;

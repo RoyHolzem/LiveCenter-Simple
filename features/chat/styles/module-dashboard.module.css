@@ -29,7 +29,7 @@
 .tintBg_info { composes: tintBg_info from './shared.module.css'; }
 
 /* ─── Layout ─── */
-.moduleDashboard { flex: 1; min-width: 0; min-height: 0; overflow: auto; padding: 18px; border: 1px solid var(--border); border-radius: 28px; background: color-mix(in srgb, var(--bg-card) 92%, transparent); box-shadow: 0 26px 70px rgba(0,0,0,.2); backdrop-filter: blur(20px); }
+.moduleDashboard { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; padding: 18px; border: 1px solid var(--border); border-radius: 28px; background: color-mix(in srgb, var(--bg-card) 92%, transparent); box-shadow: 0 26px 70px rgba(0,0,0,.2); backdrop-filter: blur(20px); }
 .moduleHeader, .moduleSummaryRow, .moduleGrid, .statusFilterBar { max-width: 1440px; margin-inline: auto; }
 .moduleHeader { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:18px; }
 .moduleHeaderLeft { min-width:0; display:flex; align-items:center; gap:12px; }
@@ -61,8 +61,8 @@
 .statusFilterTabActive .statusFilterCount { background:rgba(7,153,235,.2); color:#62c5ff; }
 
 /* ─── Main grid ─── */
-.moduleGrid { display:grid; grid-template-columns:minmax(300px,.85fr) minmax(360px,1.15fr); gap:14px; min-height:0; }
-.moduleList, .moduleDetail { min-width:0; min-height:520px; overflow:auto; border:1px solid var(--border); border-radius:28px; background:rgba(255,255,255,.02); padding:12px; }
+.moduleGrid { flex: 1; min-height: 0; display:grid; grid-template-columns:minmax(340px,.7fr) minmax(400px,1fr); gap:14px; overflow:hidden; }
+.moduleList, .moduleDetail { min-width:0; min-height:0; overflow-y:auto; border:1px solid var(--border); border-radius:28px; background:rgba(255,255,255,.02); padding:12px; }
 
 /* ─── Record card ─── */
 .moduleRecordCard { position:relative; width:100%; display:flex; align-items:stretch; margin-bottom:10px; border:1px solid var(--border); border-radius:20px; background:var(--bg-card); color:var(--text); font:inherit; box-shadow:0 12px 30px rgba(0,0,0,.1); overflow:hidden; }

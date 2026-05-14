@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { XenaUiAction } from '@/lib/xena-ui-actions';
 import type { XenaActionEvent, TelecomView } from '@/lib/types';
+import { cn } from './chat-utils';
 import { publicConfig } from './chat-config';
 import { useAuthToken } from '../auth/AuthWrapper';
 import { useChat } from './hooks/useChat';
@@ -168,7 +169,7 @@ export function ChatShell() {
         onToggleTheme={toggleTheme}
       />
 
-      <div className={styles.body}>
+      <div className={cn(styles.body, !isXenaMode && styles.bodyFullWidth)}>
         {isXenaMode ? (
           <>
             <AgentActionsPanel actions={actionLog.actions} />
